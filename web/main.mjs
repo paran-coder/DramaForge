@@ -508,6 +508,17 @@ async function checkStatus(){
  catch(e){setDisconnected(connectionErrorMessage(e));}
 }
 $('statusBtn').onclick=checkStatus;
+$('bridgeHealthBtn').onclick=()=>{
+ const tab=window.open('http://127.0.0.1:7331/health','_blank','noopener,noreferrer');
+ if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7331/health 를 주소창에 직접 입력하세요.';
+};
+if(!/win/i.test(String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'')))$('bridgeRepairBtn').hidden=true;
+$('bridgeRepairBtn').onclick=()=>{
+ const url='/downloads/DramaForge-Repair-Windows.cmd';
+ const a=document.createElement('a');a.href=url;a.download='DramaForge-Repair-Windows.cmd';document.body.append(a);a.click();a.remove();
+ $('connectionStatus').textContent='Windows 연결 복구 도우미가 다운로드되었습니다. 파일을 실행하면 기존 설치를 점검하고 연결 프로그램 시작을 시도합니다. 파일 설치나 Codex 로그인 정보 변경은 하지 않습니다.';
+};
+
 $('loginBtn').onclick=async()=>{
  // A blank tab must be opened synchronously before waiting for the local bridge,
  // otherwise browser popup blockers may prevent the official authentication page.

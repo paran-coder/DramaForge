@@ -1,4 +1,4 @@
-# DramaForge v1.7.2 — 브라우저 AI 연결 자동 설치 및 제작 관리
+# DramaForge v1.7.3 — 브라우저 AI 연결 자동 설치 및 제작 관리
 
 사용자의 공개 서비스 계획에 따라 **정적 브라우저 웹앱 + 사용자 PC의 Codex 로컬 브리지** 구조를 유지합니다. 웹사이트는 Vercel 배포용 정적 파일이며, 작품은 해당 브라우저의 IndexedDB에 저장합니다. Codex 요청을 명시적으로 실행할 때 대본·프롬프트가 로컬 연결 프로그램을 통해 OpenAI로 전송될 수 있습니다.
 
@@ -88,3 +88,9 @@ Two onboarding paths, local multi-file planning import, independent how-to page,
 ## v1.7.2 연결 문제 수정
 
 Windows 자동 설치 파일의 PowerShell 구분자 검색 오류를 수정하고, 설치 후 브리지 `/health` 응답 확인 및 실패 로그를 추가했습니다. 로그인 버튼에서 브리지 자동 재연결을 수행합니다. 복구 절차: `docs/CONNECTOR_FIX_v1.7.2.md`. 공개 Vercel 주소에 재배포되기 전까지 기존 사용자 PC의 연결은 자동으로 수정되지 않습니다.
+
+## v1.7.3 Windows connector diagnostics
+- Web popup now offers local `/health` check and `DramaForge-Repair-Windows.cmd` download.
+- The repair utility checks existing installed components, attempts the **existing** launcher once, records diagnostic status, and does not reinstall packages or modify user projects.
+- Healthy `/health` plus inaccessible AI connection suggests browser localhost permission/CORS. Failed `/health` suggests installer/runtime/port failure.
+- Windows real-machine installation and authenticated login have **not** been tested in this build.

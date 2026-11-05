@@ -69,3 +69,6 @@ DramaForge 웹에서 **AI 연결**을 누릅니다. 기존 로컬 브리지가 �
 
 ## 연결 설치 문제 진단 (v1.7.2)
 연결 도우미를 실행했어도 버튼이 바뀌지 않으면 `http://127.0.0.1:7331/health`를 확인하세요. 연결되면 상태 JSON이 표시됩니다. 연결되지 않으면 `%TEMP%\DramaForge-Setup.log` 또는 `%LOCALAPPDATA%\Programs\DramaForgeConnector\logs\bridge.stderr.log`를 확인합니다. 자세한 내용: `docs/CONNECTOR_FIX_v1.7.2.md`.
+
+
+v1.7.3 연결 진단: `AI 연결 → PC 실행 상태 확인`으로 `/health`를 확인하고, 응답하지 않으면 `연결 복구 도우미`를 실행합니다. 복구 파일은 최초 설치 파일이 아닌 기존 설치 진단·재시작용입니다. 실제 Windows 실행 미검증.
