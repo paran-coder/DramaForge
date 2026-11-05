@@ -1,4 +1,4 @@
-# NodeCanvas v1.13.0 → DramaForge v1.9.2 비교
+# NodeCanvas v1.13.0 → DramaForge v1.9.3 비교
 
 ## 원본 출처
 - `vendor/nodecanvas-v1.13.0/installer/2026-10-31-Connector.cs`

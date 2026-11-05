@@ -1,4 +1,4 @@
-# DramaForge v1.9.2 · NodeCanvas 방식 Windows 연결 앱 설치·배포
+# DramaForge v1.9.3 · NodeCanvas 방식 Windows 연결 앱 설치·배포
 
 ## 목표
 - NodeCanvas v1.13.0 원본에서 확인된 **네이티브 Windows C# 설치/런처, 일회용 승인값, Codex app-server 실행** 방식을 DramaForge 전용으로 유지합니다.
@@ -7,10 +7,10 @@
 - **Windows용 실행 파일은 GitHub Actions의 Windows 실행 환경에서 실제 컴파일**합니다. Vercel에서 C# 설치 프로그램을 빌드하지 않습니다.
 
 ## GitHub Desktop 적용 순서
-1. 이 ZIP을 **GitHub 저장소 루트에 펼칩니다**. 최상위에 `package.json`, `web/`, `bridge/`, `installer/`, `.github/`가 있어야 합니다. `DramaForge-v1.9.2/` 폴더가 한 단계 더 만들어지면 안 됩니다.
+1. 이 ZIP을 **GitHub 저장소 루트에 펼칩니다**. 최상위에 `package.json`, `web/`, `bridge/`, `installer/`, `.github/`가 있어야 합니다. `DramaForge-v1.9.3/` 폴더가 한 단계 더 만들어지면 안 됩니다.
 2. GitHub Desktop에서 변경 사항을 확인한 뒤 `main`에 커밋 및 푸시합니다. 기존 프로젝트를 덮어쓰는 변경이므로 작업 백업을 유지하십시오.
 3. GitHub 저장소의 **Actions → Build and publish DramaForge Windows connector**에서 Windows 빌드 실행 결과를 확인합니다. `push(main)`에서 빌드가 자동 시작되도록 구성되어 있으며, 필요 시 `Run workflow`를 직접 누를 수 있습니다.
-4. Windows 빌드가 성공하면 `DramaForge-Setup-Windows-v1.9.2-unsigned`라는 아티팩트가 생성됩니다.
+4. Windows 빌드가 성공하면 `DramaForge-Setup-Windows-v1.9.3-unsigned`라는 아티팩트가 생성됩니다.
 5. 다음 `publish` 작업이 빌드 아티팩트를 내려받아 **`web/downloads/DramaForge-Setup-Windows.exe`에 커밋하고 푸시합니다**. 이 커밋이 Vercel로 배포됐는지 확인합니다.
 6. `https://dramaforge-lemon-ten.vercel.app/downloads/DramaForge-Setup-Windows.exe`가 실제 200/바이너리 파일로 제공될 때 설치 버튼이 활성화됩니다. 완료 전에는 설치 버튼을 사용 가능한 것처럼 표시하지 않습니다.
 7. 사용자는 설치 EXE를 1회 실행한 뒤 DramaForge에서 **PC 연결 앱 열기**를 선택합니다. 최초 앱 열기 및 웹 출처 승인은 Windows에서 사용자가 확인합니다.

@@ -8,6 +8,8 @@ on:
       - 'bridge/**'
       - '.github/workflows/windows-installer.yml'
       - 'package.json'
+      - 'scripts/prepare-windows-installer-build.mjs'
+      - 'web/downloads/NodeCanvas-Setup-v1.13.0.exe'
   workflow_dispatch:
 
 jobs:
@@ -23,6 +25,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
+      # Older source ZIPs contained the image-only NodeCanvas installer in public assets.
+      # GitHub Desktop copies files but does not delete tracked files absent from a ZIP.
+      - name: Remove obsolete NodeCanvas installer from build checkout
+        run: node scripts/prepare-windows-installer-build.mjs
       - name: Run regression tests
         run: npm test
       - name: Build installer using NodeCanvas-derived native C# source
@@ -47,7 +53,7 @@ jobs:
           Get-FileHash $p -Algorithm SHA256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: DramaForge-Setup-Windows-v1.9.2-unsigned
+          name: DramaForge-Setup-Windows-v1.9.3-unsigned
           path: web/downloads/DramaForge-Setup-Windows.exe
           if-no-files-found: error
           retention-days: 30
@@ -65,7 +71,7 @@ jobs:
           persist-credentials: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.1.8
         with:
-          name: DramaForge-Setup-Windows-v1.9.2-unsigned
+          name: DramaForge-Setup-Windows-v1.9.3-unsigned
           path: web/downloads
       - name: Commit installer EXE to repository for Vercel static serving
         shell: bash
@@ -75,10 +81,12 @@ jobs:
           test -s "$file"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          # Delete the previously committed image-only installer as part of the publish commit.
+          git rm -f --ignore-unmatch -- web/downloads/NodeCanvas-Setup-v1.13.0.exe
           git add -- "$file"
           if git diff --cached --quiet; then
             echo 'EXE unchanged; no commit needed.'
             exit 0
           fi
-          git commit -m 'build: publish DramaForge native Windows connector v1.9.2'
+          git commit -m 'build: publish DramaForge native Windows connector v1.9.3'
           git push origin HEAD:main

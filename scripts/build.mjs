@@ -62,6 +62,8 @@ await verifyNativeInstaller();
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 await cp(source, output, { recursive: true, force: true });
+// Defense in depth: an old tracked NodeCanvas image-only EXE is not a DramaForge installer.
+await rm(path.join(output, 'downloads', 'NodeCanvas-Setup-v1.13.0.exe'), { force: true });
 const htmlPath = path.join(output, 'index.html');
 const original = await readFile(htmlPath, 'utf8');
 await writeFile(htmlPath, decorateMetadata(original, deploymentOrigin()));

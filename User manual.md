@@ -1,4 +1,4 @@
-# DramaForge v1.9.2 · 사용자 매뉴얼
+# DramaForge v1.9.3 · 사용자 매뉴얼
 
 작품 기획과 대본·정설·연속성 기능은 브라우저에서 작업하며, AI 작업은 PC에 설치한 DramaForge 연결 앱을 거쳐 ChatGPT Codex로 실행합니다.
 

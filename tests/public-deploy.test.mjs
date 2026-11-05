@@ -35,7 +35,7 @@ test('public origin still requires native grant, forbids shell work and blocks f
  assert.equal(b.approveActivation({origin:ORIGIN,challenge,createdAt:Date.now()}),true);
  const ok=await send('/api/claim',{secret},ORIGIN);
  assert.equal(ok.status,200);assert.equal(ok.headers.get('Access-Control-Allow-Origin'),ORIGIN);
- assert.equal(ok.body.version,'1.9.2');
+ assert.equal(ok.body.version,'1.9.3');
  assert.equal((await send('/api/jobs',{mode:'shots',prompt:'scene'},'https://attacker.example',ok.body.token)).status,403);
  assert.equal((await send('/api/jobs',{mode:'terminal',prompt:'rm -rf /'},ORIGIN,ok.body.token)).status,400);
  assert.equal((await send('/api/status',{},ORIGIN,ok.body.token)).status,200);
