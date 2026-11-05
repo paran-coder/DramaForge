@@ -40,15 +40,18 @@ test('help page and main UI link exist; onboarding offers both paths',()=>{
  assert.match(html,/href="\/guide\.html"/);assert.match(guide,/id="ai-connection"/);
  assert.doesNotMatch(html,/id="pairCode"/);
 });
-test('bridge permits no-code connection only for exact approved origin and retains auth on jobs',async t=>{
+test('native one-time grant replaces insecure CORS-only authorization',async t=>{
+ const {createHash}=await import('node:crypto');
  const site='https://dramaforge-lemon-ten.vercel.app';
  const bridge=await createBridge({port:0,origins:[site],provider:provider()});t.after(()=>bridge.close());
  const url=`http://127.0.0.1:${bridge.port}`;
- const request=async(route,origin,token)=>{const r=await fetch(url+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:'{}'});return {status:r.status,data:await r.json()};};
+ const request=async(route,origin,token,body={})=>{const r=await fetch(url+route,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});return {status:r.status,data:await r.json()};};
  assert.equal((await request('/api/connect','https://untrusted.example')).status,403);
  assert.equal((await request('/api/status',site)).status,401);
- const established=await request('/api/connect',site);assert.equal(established.status,200);
- assert.equal(established.data.authorization,'origin-allowlist');
+ assert.equal((await request('/api/connect',site)).status,410);
+ const secret='33'.repeat(32),challenge=createHash('sha256').update(Buffer.from(secret,'hex')).digest('hex');
+ assert.equal(bridge.approveActivation({origin:site,challenge,createdAt:Date.now()}),true);
+ const established=await request('/api/claim',site,'',{secret});assert.equal(established.status,200);
  const token=established.data.token;
  assert.equal((await request('/api/status',site,token)).status,200);
  assert.equal((await request('/api/status','https://untrusted.example',token)).status,403);

@@ -444,15 +444,19 @@ $('backupBtn').onclick=downloadBackup;
 $('folderBtn').onclick=async()=>{if(!window.showDirectoryPicker)return notice('이 브라우저는 폴더 저장을 지원하지 않습니다. ZIP 백업을 이용하세요.');try{backupHandle=await window.showDirectoryPicker({mode:'readwrite'});await writeFolderBackup(false);}catch(e){if(e.name!=='AbortError')notice('폴더 백업 실패: '+e.message);}};
 $('importFile').onchange=async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>120_000_000)throw new Error('백업 파일이 너무 큽니다.');const p=validateImportedProject(projectFromZip(await file.arrayBuffer()));await verifyCanonIntegrity(p);ensureGuards(p);if(projects.some(q=>q.id===p.id)){if(!confirm('동일한 작품이 이미 있습니다. 새 복사본으로 가져올까요?'))return;p.id=crypto.randomUUID();p.title+=' (복원)';}await flush();projects.unshift(p);project=p;selected=p.shots[0]?.id||null;resetWriterScope();await persist();render();notice('프로젝트 ZIP 복원 완료');}catch(err){notice('복원 실패: '+err.message);}finally{e.target.value='';}};
 let installPoll=null;
-let windowsSetup='/downloads/DramaForge-Setup-Windows.cmd';
-void fetch('/downloads/DramaForge-Setup-Windows.exe',{method:'HEAD'}).then(r=>{if(r.ok)windowsSetup='/downloads/DramaForge-Setup-Windows.exe';}).catch(()=>{});
+const WINDOWS_SETUP='/downloads/DramaForge-Setup-Windows.exe';
 function installFileForPlatform(){
  const platform=String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'').toLowerCase();
- return /win/.test(platform)?windowsSetup:'/downloads/DramaForge-Setup-Unix.sh';
+ return /win/.test(platform)?WINDOWS_SETUP:null; // Other OS installers are not yet native-tested.
+}
+async function prewarmNativeActivation(){
+ const button=$('autoConnectBtn');button.disabled=true;
+ try{await bridge.prepareActivation(window.location.origin);}catch(error){$('connectionStatus').textContent=error.message;}
+ finally{button.disabled=false;}
 }
 function connectionErrorMessage(error){
  const message=String(error?.message||error||'연결 오류');
- if(message.includes('브리지에 연결할 수 없습니다'))return '로컬 연결 프로그램이 응답하지 않습니다. 설치 도우미를 실행했는지 확인하세요. Windows라면 %LOCALAPPDATA%\\Programs\\DramaForgeConnector\\logs 에서 실행 오류를 확인할 수 있습니다. 브라우저의 로컬 네트워크 연결 권한도 확인하세요.';
+ if(message.includes('로컬 연결 앱이 실행되지'))return 'PC 연결 앱이 실행되지 않았거나 브라우저의 로컬 네트워크 권한이 차단되었습니다. Windows 설치 앱이 등록되었는지 확인하세요.';
  return message;
 }
 function setDisconnected(message){
@@ -460,7 +464,7 @@ function setDisconnected(message){
  $('connectBtn').textContent='◉ AI 연결';
  $('firstInstallHelp').hidden=false;
  $('connectionStatus').textContent=message;
- $('loginBtn').title='연결 도우미가 감지되지 않으면 설치 안내가 나타납니다.';
+ $('loginBtn').title='PC 연결을 승인한 다음 ChatGPT 로그인할 수 있습니다.';
 }
 async function renderConnectedStatus(){
  const status=await bridge.status();
@@ -474,37 +478,45 @@ function stopInstallWatch(){if(installPoll!==null){clearInterval(installPoll);in
 function watchInstallation(){
  stopInstallWatch();let checks=0,inFlight=false;
  installPoll=setInterval(async()=>{
-  if(inFlight)return;
-  if(++checks>120){stopInstallWatch();$('installProgress').textContent='연결 대기 시간이 지났습니다. 설치 도우미 실행 결과와 PC의 로그 폴더를 확인한 뒤 다시 연결을 누르세요.';return;}
-  inFlight=true;
+  if(inFlight)return;inFlight=true;
   try{
-   await bridge.connect();
-   stopInstallWatch();$('installProgress').textContent='브리지 실행이 확인되었습니다.';
-   await renderConnectedStatus();
-  }catch(e){if(checks%5===0)$('installProgress').textContent=`브리지 실행 대기 중 (${checks*2}초)… ${connectionErrorMessage(e)}`;}
-  finally{inFlight=false;}
+   if(++checks>75){stopInstallWatch();$('installProgress').textContent='설치 여부를 확인하지 못했습니다. PC에서 설치 완료 메시지를 확인하세요.';return;}
+   const status=await bridge.presence();
+   if(status.app==='DramaForge'){
+    stopInstallWatch();$('installProgress').textContent='PC 연결 프로그램 실행이 확인되었습니다. 이제 「PC 연결 앱 열기」로 연결을 승인하세요.';
+    await prewarmNativeActivation();
+   }
+  }catch{}finally{inFlight=false;}
  },2000);
 }
-$('installConnectorBtn').onclick=()=>{
- const url=installFileForPlatform();const a=document.createElement('a');a.href=url;a.download=url.split('/').pop();document.body.append(a);a.click();a.remove();
- $('installProgress').textContent=/Windows/i.test(url)?'설치 프로그램을 열고 완료 메시지가 표시되는지 확인하세요. 완료 후 연결 상태를 자동 확인합니다.':'설치 스크립트를 직접 실행하세요. 완료 후 연결 상태를 자동 확인합니다.';
- watchInstallation();
-};
-async function autoConnect({silent=false}={}){
- if(!silent)$('connectionStatus').textContent='로컬 연결 확인 중…';
+$('installConnectorBtn').onclick=async()=>{
+ const url=installFileForPlatform();
+ if(!url){$('installProgress').textContent='현재 자동 실행 연결은 Windows 네이티브 설치만 지원합니다. macOS/Linux 연결은 추후 검증 후 제공합니다.';return;}
  try{
-  await bridge.connect();await renderConnectedStatus();stopInstallWatch();
-  if(!silent)notice('로컬 Codex 브리지와 연결되었습니다.');
-  return true;
- }catch(e){
-  setDisconnected(silent?'연결 전':connectionErrorMessage(e));
-  return false;
- }
+  const response=await fetch(url,{method:'HEAD',cache:'no-store'});
+  if(!response.ok||!response.headers.get('content-type')?.match(/application|octet-stream|binary/i))throw new Error('네이티브 설치 파일이 아직 배포되지 않았습니다. Windows 빌드 산출물을 올려야 합니다.');
+  const a=document.createElement('a');a.href=url;a.download='DramaForge-Setup-Windows.exe';document.body.append(a);a.click();a.remove();
+  $('installProgress').textContent='설치 EXE를 한 번 실행하고 Windows 보안 안내를 확인하세요. 설치가 끝나면 PC 연결을 승인할 수 있습니다.';
+  watchInstallation();
+ }catch(e){$('installProgress').textContent=e.message;}
+};
+async function startNativeConnection(){
+ $('connectionStatus').textContent='PC 연결 앱을 열도록 요청합니다. 운영체제의 앱 열기 창을 허용하세요.';
+ try{
+  await bridge.activate({origin:window.location.origin,onProgress:(message)=>{$('connectionStatus').textContent=message;}});
+  await renderConnectedStatus();stopInstallWatch();notice('DramaForge PC 연결이 승인되었습니다.');return true;
+ }catch(e){setDisconnected(connectionErrorMessage(e));return false;}
 }
-$('connectBtn').onclick=async()=>{$('connectDialog').showModal();await autoConnect();};
-$('autoConnectBtn').onclick=()=>autoConnect();
+async function autoConnect({silent=false}={}){
+ try{
+  if(!bridge.token){if(silent){setDisconnected('PC 연결 승인이 필요합니다.');return false;}return startNativeConnection();}
+  await bridge.reconnect();await renderConnectedStatus();stopInstallWatch();return true;
+ }catch(e){if(silent){setDisconnected('PC 연결 승인이 필요합니다.');return false;}return startNativeConnection();}
+}
+$('connectBtn').onclick=async()=>{$('connectDialog').showModal();void prewarmNativeActivation();if(bridge.token)await autoConnect({silent:true});};
+$('autoConnectBtn').onclick=()=>startNativeConnection();
 async function checkStatus(){
- try{if(!bridge.token)await bridge.connect();await renderConnectedStatus();}
+ try{if(!bridge.token)throw new Error('먼저 PC 연결 앱을 열고 승인하세요.');await renderConnectedStatus();}
  catch(e){setDisconnected(connectionErrorMessage(e));}
 }
 $('statusBtn').onclick=checkStatus;
@@ -512,20 +524,14 @@ $('bridgeHealthBtn').onclick=()=>{
  const tab=window.open('http://127.0.0.1:7331/health','_blank','noopener,noreferrer');
  if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7331/health 를 주소창에 직접 입력하세요.';
 };
-if(!/win/i.test(String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'')))$('bridgeRepairBtn').hidden=true;
-$('bridgeRepairBtn').onclick=()=>{
- const url='/downloads/DramaForge-Repair-Windows.cmd';
- const a=document.createElement('a');a.href=url;a.download='DramaForge-Repair-Windows.cmd';document.body.append(a);a.click();a.remove();
- $('connectionStatus').textContent='Windows 연결 복구 도우미가 다운로드되었습니다. 파일을 실행하면 기존 설치를 점검하고 연결 프로그램 시작을 시도합니다. 파일 설치나 Codex 로그인 정보 변경은 하지 않습니다.';
-};
-
+$('bridgeRepairBtn').hidden=true; // Old .cmd recovery is not a native v1.8.0 upgrade path.
 $('loginBtn').onclick=async()=>{
  // A blank tab must be opened synchronously before waiting for the local bridge,
  // otherwise browser popup blockers may prevent the official authentication page.
  const tab=window.open('about:blank','_blank');
  $('connectionStatus').textContent='연결 프로그램과 Codex 로그인 상태를 확인하는 중…';
  try{
-  if(!bridge.token)await bridge.connect();
+  if(!bridge.token){tab?.close();$('connectionStatus').textContent='먼저 「PC 연결 앱 열기」를 눌러 Windows에서 연결 요청을 승인해 주세요.';void prewarmNativeActivation();return;}
   const result=await bridge.login();
   $('connectBtn').textContent='◉ 브리지 연결';$('firstInstallHelp').hidden=true;
   if(result.authUrl){

@@ -1,32 +1,22 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('Windows one-click CMD extracts the last marker, not the one within command text',()=>{
- const cmd=read('web/downloads/DramaForge-Setup-Windows.cmd');
- const marker='### DRAMAFORGE-POWERSHELL ###';
- assert.ok(cmd.indexOf(marker)>0);
- assert.ok(cmd.lastIndexOf(marker)>cmd.indexOf(marker),'marker appears inside CMD command and before payload');
- assert.match(cmd, /\$raw\.LastIndexOf\(\$marker\)/);
- assert.doesNotMatch(cmd,/\$raw\.IndexOf\(\$marker\)/);
- const script=cmd.substring(cmd.lastIndexOf(marker)+marker.length).trimStart();
- assert.ok(script.startsWith('# DramaForge 1.7.2 per-user bootstrap'));
- assert.match(script,/Invoke-WebRequest/);
- assert.match(script,/Get-FileHash/);
+test('native Windows setup embeds launcher and bridge instead of downloading unversioned scripts',()=>{
+ const script=read('installer/build-windows.ps1');
+ assert.match(script,/ConnectorLauncher\.cs/);assert.match(script,/Setup\.cs/);
+ assert.match(script,/launcher-bin/);assert.match(script,/payload\.zip/);assert.match(script,/--self-test/);
+ assert.match(read('installer/Setup.cs'),/ExtractSafe/);
 });
-test('Windows installer verifies service ready, logs failures and does not rely on mere TCP connect',()=>{
- const ps=read('installer/install-windows.ps1');
- assert.match(ps,/Invoke-RestMethod -Uri 'http:\/\/127\.0\.0\.1:7331\/health'/);
- assert.match(ps,/version -eq '1\.7\.2'/);
- assert.match(ps,/Start-Transcript/);
- assert.match(ps,/bridge\.stderr\.log/);
- assert.match(ps,/설치 실패:/);
+test('installer checks health, pins downloaded runtimes and can rollback previous installation',()=>{
+ const script=read('installer/install-windows.ps1');
+ assert.match(script,/127\.0\.0\.1:7331\/health/);assert.match(script,/1\.8\.0/);
+ assert.match(script,/Start-Transcript/);assert.match(script,/Stop-Previous-Trusted-Bridge/);
+ assert.match(script,/Get-FileHash/);assert.match(script,/Register-Protocol/);
+ assert.match(script,/\.v1\.8-backup/);assert.match(script,/if \(-not \$installed\)/);
+ assert.doesNotMatch(script,/Start-Process.*-Verb\s+RunAs/i);
 });
-test('the connect dialog explicitly attempts a bridge connection before login',()=>{
- const script=read('web/main.mjs');
- const start=script.indexOf("$('loginBtn').onclick");
- const block=script.slice(start,start+1000);
- assert.match(block,/if\(!bridge\.token\)await bridge\.connect\(\);/);
+test('login cannot call bridge until local native activation granted a session',()=>{
+ const script=read('web/main.mjs'),block=script.slice(script.indexOf("$('loginBtn').onclick"));
+ assert.match(block,/if\(!bridge\.token\)/);
  assert.match(block,/const result=await bridge\.login\(\)/);
- assert.match(script,/connectionErrorMessage/);
+ assert.doesNotMatch(block,/await bridge\.connect\(\)/);
 });

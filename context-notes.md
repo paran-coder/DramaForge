@@ -1,60 +1,29 @@
-# DramaForge v1.6.0 — 설계/변경 기록
+# DramaForge v1.8.0 — Context Notes
 
-## 사용자가 승인한 요구사항
+## 목표
+사용자 승인(2026-11-05): NodeCanvas v1.13.0의 네이티브 프로토콜 호출 + 1회용 챌린지 연결 방식으로 기존 DramaForge 브리지 교체.
 
-- ContinuityMemory v1.0.3을 스킬 전체로 설치하지 않고 **선별 기능 4개만** 통합.
-- 작품의 공식 정설은 **작가 1인 승인**만 가능. 기존 승인 사항에 대한 반복 질문 없음.
-- 대본·AI 대화 중심 화면, 회차별 연속성, What-if 분리, Seedance 프롬프트/외부 영상 제작은 유지.
-- 향후 GitHub에 소스를 관리하고 Vercel에 **공개** 정적 앱으로 제공. 사용자 데이터는 로컬 브라우저에 보존.
-- 사용자가 제공한 UI Polish와 Binance 컬러 디자인 토큰(v1.5.1) 그대로 유지.
+## 고정 제약
+- 작품 데이터: 사용자 브라우저의 IndexedDB / 로컬 백업. Vercel 서버에 사용자 원고 저장·중계 금지.
+- 작가 단독 정설 승인, What-if 분기, 연속성 검증 등 기존 v1.7.3 동작 보존.
+- Codex 인증은 사용자 PC의 공식 Codex CLI에서 처리.
+- 연결코드 수동 입력 금지. 브라우저에서 직접 사용자의 PC에 프로그램을 무단 설치하지 않음.
+- 구 NodeCanvas 포트 7330과 충돌하지 않는 DramaForge 포트 7331 유지.
+- 공개 운영 사이트: https://dramaforge-lemon-ten.vercel.app
+- Windows 네이티브 설치와 프로토콜 핸들러. macOS/Linux의 자동 네이티브 연결은 별도 검증 필요.
 
-## v1.6.0 구현 결정
+## 참조 구현
+사용자 첨부 `2026-11-01-NodeCanvas-v1.13.0-github.zip`:
+- `connector/2026-10-31-activation.mjs` (확인값·기한·클레임)
+- `connector/2026-10-31-server.mjs` (활성화 파일 폴링·origin 검증)
+- `installer/2026-10-31-Connector.cs` (custom protocol, 사용자 승인, 실행 앱)
+- `web/2026-10-31-app.mjs` (브라우저 secret → challenge → OS 앱 실행 → claim)
 
-1. `narrative` 선택적 프로젝트 원장 추가. 과거 `canon`, `series` 승인본은 전혀 재작성하지 않음.
-2. 인과관계는 승인된 기존 사건 ID만 참조. 명시적 세계관 시간 순서가 있으면 원인/결과 역전 불허.
-3. 세계관 진실/인물 지식·믿음/시청자 정보·믿음을 별개 값으로 기록. 오해·반전은 작가가 의도를 남김.
-4. 시간축은 극중 발생 세계 순서(`worldOrder`) + 시청자 공개(`audienceEpisode`) + 승인 버전 시각(`approvedAt`).
-5. 치명 문제는 즉시/차단, 중요는 작가 승인 전 검토 이유, 경미는 일괄 목록. 불확실한 의미 추론은 차단이 아니라 경고.
-6. 관련 사건 revision이 변하면 `NARRATIVE_DEPENDENCY_STALE`로 표시하고 작가의 재확인을 요구.
+## 단계
+1. NodeCanvas의 승인 계약을 DramaForge 포트/경로/작업 API로 재구성.
+2. 브라우저가 OS 프로토콜로 앱 호출, 세션 챌린지 승인.
+3. Windows C# 연결 앱 및 기존 설치 업그레이드 설계. 바이너리 컴파일은 Windows runner에서 별도 실행.
+4. 공격 시나리오, 회귀, 정적 빌드 테스트. 실기기 로그인 및 설치는 미검증으로 유지.
 
-## 상태
-
-- Node 자동 테스트: 120/120 PASS (v1.5.1 98 + v1.6.0 22).
-- Chromium DOM/CSS 모의 프로젝트: PASS (1440/390px, 클릭·승인·비교·가로 넘침 없음).
-- 실제 Codex·IndexedDB 새로고침·Vercel Preview/운영: NOT TESTED.
-- 전체 소스/매뉴얼/테스트 결과를 ZIP으로 제공. 사용자 GitHub 저장소나 Vercel 프로젝트는 변경하지 않음.
-
-## v1.6.1 — 사용자 요청 승인에 따른 소셜 미리보기 및 방문 분석
-
-- 사용자가 직전에 승인한 DramaForge 홍보 이미지를 `og-image.png`로 사용함.
-- URL 미확정: 배포 환경의 VERCEL_URL로 빌드 시 절대 URL을 설정, 사용자가 알려주는 운영 도메인은 추후 PUBLIC_SITE_URL로 지정.
-- 첨부 안내의 React/Next.js 코드가 아니라 정적 HTML용 Vercel Web Analytics 경로를 사용. 대본/이미지 등 콘텐츠 수집 코드는 추가하지 않음.
-- 범위 보호: 정설·승인·브리지·스토리보드·백업 기능 및 내부 데이터 로직 변경 없음. 캐릭터/서사 승인 규칙도 변경 없음.
-- 코드 변경은 메타데이터/빌드 단계/브라우저 Analytics 스크립트 및 설명문에 한정.
-
-
-## v1.6.2 운영 도메인 확정
-
-- 사용자가 운영 URL `https://dramaforge-lemon-ten.vercel.app/`을 제공함.
-- Production 빌드에만 확정 도메인을 기본 적용하고 Preview는 독립 주소 유지.
-- API 권한으로 배포 READY 확인, 실제 HTML 조회는 Vercel 연결 권한 거부로 미검증.
-- 정설·시나리오·브리지 기능은 수정하지 않음.
-
-## v1.7.1 approved scope (2026-11-05)
-- Author-approved two entry paths: co-create a new project via interview/free dialogue, or import multiple existing planning documents.
-- Add a first-party How to Use page.
-- Replace typed local bridge pairing code with origin-approved automatic connection. Preserve exact Origin, loopback binding, host validation and bearer auth for all AI actions.
-- Browser cannot silently install native executables. Preserve user consent for first-time local helper installation; do not claim fully automatic native install.
-- Existing canon/approved decisions are immutable without author approval. Keep all existing local-first storage/backup functionality.
-
-
-## v1.7.1 범위 변경 및 기술 판단
-
-사용자는 기존 안내 화면의 압축 해제, Node 설치, Codex 설치, 명령 실행을 직접 하지 않는 최초 설치 자동화를 요구했습니다. 브라우저 보안상 무동의 자동 네이티브 설치는 허용되지 않으므로, 한 번 설치 파일을 실행·승인하면 공식 Node/Codex를 자동 설치하는 per-user bootstrap으로 구현했습니다. 기존 AI 인증/데이터 처리/정설 보호는 변경하지 않았습니다. `.cmd`/`.sh` 설치 파일은 코드 서명된 네이티브 인스톨러가 아니며 실제 운영체제 테스트가 필요합니다.
-
-
-## v1.7.2 이슈 추적
-증상: Windows 설치 후 연결 상태 미변경 및 ChatGPT 로그인 무응답. CMD 내부 `IndexOf`가 명령문 안의 첫 마커를 찾는 치명적 추출 오류를 확인하여 `LastIndexOf`로 수정. 로컬 서비스 실제 health 검사 및 실행 오류 로그를 추가. 사용자 PC의 실제 성공 여부는 아직 미검증이며, 관련된 정설 관리 로직은 변경하지 않았습니다.
-
-
-v1.7.3 연결 진단: `AI 연결 → PC 실행 상태 확인`으로 `/health`를 확인하고, 응답하지 않으면 `연결 복구 도우미`를 실행합니다. 복구 파일은 최초 설치 파일이 아닌 기존 설치 진단·재시작용입니다. 실제 Windows 실행 미검증.
+## 구현 이후 상태
+브라우저 + Node 서버 프로토콜 통합 테스트는 통과했습니다. Windows C# 런처는 이 환경에서 컴파일할 수 없었으므로 실제 바이너리가 포함되지 않으며 출시 준비 완료를 주장하지 않습니다. `web/downloads/`의 구버전 설치 스크립트와 브리지 ZIP을 공개 다운로드 대상에서 제거했습니다. GitHub Actions가 Windows에서 EXE를 빌드하면 서명·실기기 검증 후 별도로 배포해야 합니다.
