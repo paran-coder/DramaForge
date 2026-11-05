@@ -1,19 +1,22 @@
-# DramaForge v1.9.1
+# DramaForge v1.9.2
 
-사용자에게 보이는 연결 화면에서 다른 제품의 내부 기술 설명을 제거했습니다. 새 Windows 연결 앱을 설치해야 `dramaforge://`가 실행됩니다.
+AI 드라마 기획·정설 관리·연속성 검증을 위한 로컬 우선 웹앱과 Codex PC 연결 프로그램.
 
-## 현재 배포 상태
+## 이번 버전
+NodeCanvas v1.13.0 원본의 **Windows 네이티브 설치/런처 코드**를 DramaForge 전용으로 사용합니다. `dramaforge://connect`, 포트 `7331`, 작품 데이터 로컬 저장 원칙은 유지합니다. NodeCanvas 설치 프로그램을 웹앱 사용자에게 다운로드시키지 않습니다.
 
-- 이 소스에는 새로운 DramaForge Windows 설치 EXE가 **없습니다**.
-- 원본 참고 EXE는 `vendor/`에만 보관하며 **웹 배포에서는 다운로드할 수 없습니다**.
-- Vercel의 정적 빌드는 가능하지만 EXE를 배포하지 않으면 설치 버튼은 비활성화됩니다.
-- 실제 연결을 사용하려면 Windows GitHub Actions에서 빌드된 EXE를 `web/downloads/DramaForge-Setup-Windows.exe`에 배치하고 Vercel에 다시 배포해야 합니다.
-- 실제 Windows 설치/프로토콜 승인/로그인/샷 생성은 별도 검증 전에는 완료로 표기하지 않습니다.
+**Windows 설치 EXE는 GitHub Actions의 Windows 빌드에서 자동 생성됩니다.** 최초 소스 ZIP에는 EXE가 없으며, GitHub Desktop으로 GitHub에 푸시하면 Windows Actions가 `web/downloads/DramaForge-Setup-Windows.exe`를 컴파일·검증한 뒤 별도 커밋을 작성하도록 구성되어 있습니다. GitHub에 쓰기 권한이 없으면 Actions 아티팩트를 내려받아 GitHub Desktop으로 수동 커밋할 수 있습니다.
 
-## 검증
+자세한 단계: [설치·배포 설명서](docs/INSTALLER_RELEASE.md).
 
-`npm test` 및 `npm run build`
+## 소스 검사
 
-## 설치 프로그램 빌드 (Windows)
+```bash
+npm run check
+npm run build
+```
 
-GitHub Actions의 `Build DramaForge NodeCanvas-based connector v1.9.1`을 실행하거나 Windows PowerShell에서 `./installer/build-windows.ps1`을 실행합니다. EXE는 `web/downloads/DramaForge-Setup-Windows.exe`로 생성됩니다.
+검증: Node 기반 자동 테스트 164개 및 정적 빌드 통과. **실제 Windows 설치·Codex 로그인은 아직 미검증**입니다.
+
+## GitHub Desktop으로 반영
+압축 해제 후 프로젝트 루트에 `web`, `bridge`, `installer`, `.github`, `package.json`이 놓이도록 복사하고 커밋·푸시합니다. 기존 운영 소스의 백업을 권장합니다.

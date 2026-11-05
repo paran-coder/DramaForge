@@ -1,12 +1,12 @@
 {
-  "name": "dramaforge-v1.9.1",
-  "version": "1.9.1",
+  "name": "dramaforge-v1.9.2",
+  "version": "1.9.2",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node dev-server.mjs",
     "bridge": "node bridge/server.mjs",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node scripts/run-tests.mjs",
     "check": "node --check web/bridge-client.mjs && node --check web/main.mjs && node --check web/canon.mjs && node --check web/guards.mjs && node --check web/planning.mjs && node --check web/series.mjs && node --check web/local-review.mjs && node --check web/narrative.mjs && node --check web/narrative-ui.mjs && node --check bridge/provider.mjs && node --check bridge/nodecanvas-codex.mjs && node --check bridge/activation.mjs && node --check bridge/server.mjs && npm test",
     "build": "node scripts/build.mjs"
   },

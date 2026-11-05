@@ -15,16 +15,26 @@ const output = path.join(root, 'dist');
 
 const STABLE_PRODUCTION_ORIGIN = 'https://dramaforge-lemon-ten.vercel.app';
 
-// Use the user's proven NodeCanvas v1.13.0 installer EXACTLY as supplied.
-// Check the binary fingerprint; there is no Windows compilation on Vercel.
-const NODECANVAS_SHA256 = '2ffa9dfa6232d6435c992dd741c27018316c6a01beb553ecde9c530351a74178';
+// The downloadable installer is produced by the Windows GitHub Actions job.
+// Vercel builds only static assets. A missing EXE is NOT a completed installer.
 async function verifyNativeInstaller() {
-  const installer=path.join(root,'vendor','nodecanvas-v1.13.0','web','2026-10-31-NodeCanvas-Setup-v1.13.0.exe');
-  const bytes=await readFile(installer);
-  const peOffset=bytes.length>0x40?bytes.readUInt32LE(0x3c):-1;
-  const sha=createHash('sha256').update(bytes).digest('hex');
-  if(bytes.length<100_000||bytes[0]!==0x4d||bytes[1]!==0x5a||peOffset<0x40||peOffset+4>bytes.length||bytes.toString('ascii',peOffset,peOffset+4)!=='PE\0\0'||sha!==NODECANVAS_SHA256)
-    throw new Error('원본 NodeCanvas 설치 EXE의 내용이나 무결성이 맞지 않습니다.');
+  const installer = path.join(source, 'downloads', 'DramaForge-Setup-Windows.exe');
+  let bytes;
+  try { bytes = await readFile(installer); }
+  catch (error) {
+    if (error.code === 'ENOENT') {
+      console.warn('NOTICE: Windows EXE not published yet; the UI will disable installation until GitHub Actions publishes it.');
+      return false;
+    }
+    throw error;
+  }
+  const peOffset = bytes.length > 0x40 ? bytes.readUInt32LE(0x3c) : -1;
+  if (bytes.length < 100_000 || bytes.length > 25_000_000 || bytes[0] !== 0x4d || bytes[1] !== 0x5a ||
+    peOffset < 0x40 || peOffset + 4 > bytes.length || bytes.toString('ascii', peOffset, peOffset+4) !== 'PE\0\0' ||
+    !bytes.includes(Buffer.from('DramaForge', 'utf16le')) || !bytes.includes(Buffer.from('dramaforge', 'utf16le')))
+      throw new Error('Invalid DramaForge Windows installer PE. Rejecting deployment.');
+  const sha = createHash('sha256').update(bytes).digest('hex');
+  console.log('Verified DramaForge Windows EXE:', bytes.length, 'bytes, SHA-256', sha);
   return true;
 }
 

@@ -1,11 +1,12 @@
-# DramaForge-v1.9.1 checklist
-
-- [x] 연결 화면 NodeCanvas 문구 제거
-- [x] 설치 파일 존재 여부 확인과 상태 분리
-- [x] 로그인 버튼 승인 전 비활성화
-- [x] Windows 설치 버전 비교 수정
-- [x] 원본 EXE 웹 배포물에서 제외
-- [x] 구형 CI 파일 체크 정리
-- [ ] Windows Actions에서 EXE 실제 빌드
-- [ ] Windows 실기기 설치·프로토콜·로그인 통합 검증
-- [ ] Vercel Preview 배포 및 설치 파일 확인
+# DramaForge v1.9.2 체크리스트
+- [x] NodeCanvas 원본 설치·런처 코드와 v1.9.1 비교
+- [x] NodeCanvas 기반 C# 설치/런처 v1.9.2로 갱신
+- [x] GitHub Windows 빌드/PE 확인/아티팩트 다운로드/자동 커밋 워크플로 구현
+- [x] Vercel 정적 빌드와 Windows 설치 EXE 컴파일 분리
+- [x] 기존 웹앱 설치 버튼 비활성 상태와 다운로드 경로 확인
+- [x] 기존 자동 테스트·정적 빌드 통과(164/164)
+- [x] GitHub Desktop 업로드용 배포 설명서·사용자 안내 작성
+- [ ] GitHub Actions의 실제 Windows EXE 빌드 성공 확인
+- [ ] 실제 EXE 해시·서명·내장 자료 추출 확인
+- [ ] Windows 설치·앱 실행·ChatGPT Codex 로그인·텍스트/이미지 생성 실기기 검사
+- [ ] Vercel 운영 주소의 실제 설치 파일 다운로드 검증

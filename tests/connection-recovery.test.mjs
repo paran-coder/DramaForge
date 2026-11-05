@@ -7,7 +7,7 @@ test('installer health check responds without leaking account or bearer token',a
  const bridge=await createBridge({port:0,origins:[origin],provider});t.after(()=>bridge.close());
  const url=`http://127.0.0.1:${bridge.port}/health`;
  const response=await fetch(url);assert.equal(response.status,200);
- const body=await response.json();assert.equal(body.service,'dramaforge-bridge');assert.equal(body.version,'1.9.1');
+ const body=await response.json();assert.equal(body.service,'dramaforge-bridge');assert.equal(body.version,'1.9.2');
  assert.deepEqual(Object.keys(body).sort(),['ok','service','version']);
  const blocked=await fetch(url,{headers:{Origin:'https://evil.example'}});assert.equal(blocked.status,404);
 });
