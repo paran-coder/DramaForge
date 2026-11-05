@@ -23,5 +23,6 @@ test('Windows workflow checks and publishes a real compiled artifact, not an emp
  assert.match(workflow,/windows-latest/);
  assert.match(workflow,/build-windows\.ps1/);
  assert.match(workflow,/upload-artifact/);
- assert.match(workflow,/0x4D/);
+ assert.match(workflow,/npm run build/);
+ assert.match(read("scripts/build.mjs"),/0x4d/);
 });

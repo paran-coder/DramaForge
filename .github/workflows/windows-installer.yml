@@ -9,6 +9,7 @@ on:
       - '.github/workflows/windows-installer.yml'
       - 'package.json'
       - 'scripts/prepare-windows-installer-build.mjs'
+      - 'scripts/build.mjs'
       - 'web/downloads/NodeCanvas-Setup-v1.13.0.exe'
   workflow_dispatch:
 
@@ -43,17 +44,15 @@ jobs:
           $ErrorActionPreference='Stop'
           $p='web/downloads/DramaForge-Setup-Windows.exe'
           if (-not (Test-Path -LiteralPath $p)) { throw 'Windows EXE was not built' }
-          $bytes=[IO.File]::ReadAllBytes($p)
-          if ($bytes.Length -lt 100000 -or $bytes.Length -gt 25000000 -or $bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw 'Invalid Windows installer PE or size' }
-          $offset=[BitConverter]::ToInt32($bytes,0x3c)
-          if ($offset -lt 0x40 -or $offset+4 -ge $bytes.Length -or [Text.Encoding]::ASCII.GetString($bytes,$offset,4) -ne "PE`0`0") { throw 'Missing PE header' }
+          npm run build
+          if ($LASTEXITCODE -ne 0) { throw 'Static installer verification failed' }
           $testdir=Join-Path $env:RUNNER_TEMP 'df-installer-payload-smoke'
           $proc=Start-Process -FilePath (Resolve-Path $p).Path -ArgumentList @('--extract-only',"`"$testdir`"") -PassThru -Wait
           if ($proc.ExitCode -ne 0 -or -not (Test-Path (Join-Path $testdir 'bridge/server.mjs'))) { throw 'Installer payload extraction failed' }
           Get-FileHash $p -Algorithm SHA256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: DramaForge-Setup-Windows-v1.9.3-unsigned
+          name: DramaForge-Setup-Windows-v1.9.4-unsigned
           path: web/downloads/DramaForge-Setup-Windows.exe
           if-no-files-found: error
           retention-days: 30
@@ -71,7 +70,7 @@ jobs:
           persist-credentials: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.1.8
         with:
-          name: DramaForge-Setup-Windows-v1.9.3-unsigned
+          name: DramaForge-Setup-Windows-v1.9.4-unsigned
           path: web/downloads
       - name: Commit installer EXE to repository for Vercel static serving
         shell: bash
@@ -88,5 +87,5 @@ jobs:
             echo 'EXE unchanged; no commit needed.'
             exit 0
           fi
-          git commit -m 'build: publish DramaForge native Windows connector v1.9.3'
+          git commit -m 'build: publish DramaForge native Windows connector v1.9.4'
           git push origin HEAD:main

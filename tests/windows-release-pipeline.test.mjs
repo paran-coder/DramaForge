@@ -6,6 +6,7 @@ test('Windows installation is compiled by Windows runner and published to Vercel
   const workflow = read('.github/workflows/windows-installer.yml');
   assert.match(workflow, /runs-on: windows-latest/);
   assert.match(workflow, /build-windows\.ps1/);
+  assert.match(workflow, /npm run build/);
   assert.match(workflow, /--extract-only/);
   assert.match(workflow, /actions\/upload-artifact/);
   assert.match(workflow, /actions\/download-artifact/);
@@ -22,7 +23,7 @@ test('Native installation uses dedicated protocol, per-user registration and ori
   assert.match(source, /7331/);
   assert.match(source, /RuntimeHashes/);
   assert.match(source, /GetManifestResourceStream\("payload\.zip"\)/);
-  assert.match(source, /TargetVersion=new Version\(1,9,2\)/);
+  assert.match(source, /TargetVersion=new Version\(1,9,4\)/);
 });
 test('Vercel build will not pretend installer exists when Windows job has not published it', () => {
   const script = read('scripts/build.mjs');

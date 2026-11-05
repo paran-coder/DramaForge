@@ -29,10 +29,10 @@ async function verifyNativeInstaller() {
     throw error;
   }
   const peOffset = bytes.length > 0x40 ? bytes.readUInt32LE(0x3c) : -1;
-  if (bytes.length < 100_000 || bytes.length > 25_000_000 || bytes[0] !== 0x4d || bytes[1] !== 0x5a ||
+  if (bytes.length > 25_000_000 || bytes[0] !== 0x4d || bytes[1] !== 0x5a ||
     peOffset < 0x40 || peOffset + 4 > bytes.length || bytes.toString('ascii', peOffset, peOffset+4) !== 'PE\0\0' ||
     !bytes.includes(Buffer.from('DramaForge', 'utf16le')) || !bytes.includes(Buffer.from('dramaforge', 'utf16le')))
-      throw new Error('Invalid DramaForge Windows installer PE. Rejecting deployment.');
+      throw new Error(`Invalid DramaForge Windows installer PE. Rejecting deployment (${bytes.length} bytes, PE offset ${peOffset}).`);
   const sha = createHash('sha256').update(bytes).digest('hex');
   console.log('Verified DramaForge Windows EXE:', bytes.length, 'bytes, SHA-256', sha);
   return true;

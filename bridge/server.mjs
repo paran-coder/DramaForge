@@ -6,7 +6,7 @@ import path from 'node:path';
 import {CodexBridgeProvider} from './provider.mjs';
 import {ActivationGrants,validActivationOrigin} from './activation.mjs';
 
-export const VERSION='1.9.3';
+export const VERSION='1.9.4';
 const STABLE_ORIGIN='https://dramaforge-lemon-ten.vercel.app';
 const DEFAULT_ORIGINS=[STABLE_ORIGIN,'http://127.0.0.1:4173','http://localhost:4173'];
 export function verifyToken(header,token){if(typeof header!=='string'||typeof token!=='string')return false;const a=Buffer.from(header),b=Buffer.from(`Bearer ${token}`);return a.length===b.length&&timingSafeEqual(a,b);}
