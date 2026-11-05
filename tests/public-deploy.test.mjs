@@ -16,7 +16,7 @@ test('static public Vercel config has no server backend and restricts local brid
  assert.equal(config.outputDirectory,'dist');
  assert.equal(config.buildCommand,'npm run build');
  const headers=config.headers.find(x=>x.source==='/(.*)').headers;const map=new Map(headers.map(x=>[x.key,x.value]));
- assert.match(map.get('Content-Security-Policy'),/http:\/\/127\.0\.0\.1:7330/);
+ assert.match(map.get('Content-Security-Policy'),/http:\/\/127\.0\.0\.1:7331/);
  assert.doesNotMatch(map.get('Content-Security-Policy'),/unsafe-eval|unsafe-inline|\*;/);
  assert.match(map.get('Content-Security-Policy'),/frame-ancestors 'none'/);
  assert.equal(map.get('X-Frame-Options'),'DENY');
@@ -35,7 +35,7 @@ test('public origin still requires native grant, forbids shell work and blocks f
  assert.equal(b.approveActivation({origin:ORIGIN,challenge,createdAt:Date.now()}),true);
  const ok=await send('/api/claim',{secret},ORIGIN);
  assert.equal(ok.status,200);assert.equal(ok.headers.get('Access-Control-Allow-Origin'),ORIGIN);
- assert.equal(ok.body.version,'1.8.1');
+ assert.equal(ok.body.version,'1.9.0');
  assert.equal((await send('/api/jobs',{mode:'shots',prompt:'scene'},'https://attacker.example',ok.body.token)).status,403);
  assert.equal((await send('/api/jobs',{mode:'terminal',prompt:'rm -rf /'},ORIGIN,ok.body.token)).status,400);
  assert.equal((await send('/api/status',{},ORIGIN,ok.body.token)).status,200);

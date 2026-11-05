@@ -6,7 +6,7 @@ import {ensureNarrative,prioritizeContinuity,narrativePromptContext} from './nar
 import {initNarrativeUI} from './narrative-ui.mjs';
 import {ensureSeries,setWorkflow,editOutline,createEpisode,editEpisode,createSeriesRecord,decideSeriesRecord,proposeSeriesChange,resolveSeriesChange,linkShotEpisode,episodeState,inspectEpisode,seriesPromptContext} from './series.mjs';
 import {projectToZip,projectFromZip} from './zip.mjs';
-import {BridgeClient} from './nodecanvas-native-client.mjs';
+import {BridgeClient} from './bridge-client.mjs';
 import {startProject,needsOnboarding,addImportedMaterials,removeImportedMaterial,importedPlanningContext,INTERVIEW_SEED} from './onboarding.mjs';
 import {ensureGuards,addGuardRule,activeRules,staleRules,addShotClaim,removeShotClaim,inspectShot,attestShotReview,assertShotGuardReady,inspectProposal} from './guards.mjs';
 import {ensureCanon,createCanonCandidate,decideCanonCandidate,reopenDeferredDecision,requestReconsideration,requestCanonChange,resolveCanonChange,calculateChangeImpact,addShotDependency,linkShotToCanon,createWhatIfBranch,addWhatIfIdea,proposeWhatIfToMain,buildDirectorPrompt,activeCanonContext,verifyCanonIntegrity,parseDecisionProposals} from './canon.mjs';
@@ -444,7 +444,7 @@ $('backupBtn').onclick=downloadBackup;
 $('folderBtn').onclick=async()=>{if(!window.showDirectoryPicker)return notice('이 브라우저는 폴더 저장을 지원하지 않습니다. ZIP 백업을 이용하세요.');try{backupHandle=await window.showDirectoryPicker({mode:'readwrite'});await writeFolderBackup(false);}catch(e){if(e.name!=='AbortError')notice('폴더 백업 실패: '+e.message);}};
 $('importFile').onchange=async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>120_000_000)throw new Error('백업 파일이 너무 큽니다.');const p=validateImportedProject(projectFromZip(await file.arrayBuffer()));await verifyCanonIntegrity(p);ensureGuards(p);if(projects.some(q=>q.id===p.id)){if(!confirm('동일한 작품이 이미 있습니다. 새 복사본으로 가져올까요?'))return;p.id=crypto.randomUUID();p.title+=' (복원)';}await flush();projects.unshift(p);project=p;selected=p.shots[0]?.id||null;resetWriterScope();await persist();render();notice('프로젝트 ZIP 복원 완료');}catch(err){notice('복원 실패: '+err.message);}finally{e.target.value='';}};
 let installPoll=null;
-const WINDOWS_SETUP='/downloads/NodeCanvas-Setup-v1.13.0.exe';
+const WINDOWS_SETUP='/downloads/DramaForge-Setup-Windows.exe';
 function installFileForPlatform(){
  const platform=String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'').toLowerCase();
  return /win/.test(platform)?WINDOWS_SETUP:null; // Other OS installers are not yet native-tested.
@@ -470,8 +470,8 @@ async function renderConnectedStatus(){
  const status=await bridge.status();
  $('firstInstallHelp').hidden=true;
  $('connectBtn').textContent=status.account?'◉ AI 연결됨':'◉ 브리지 연결';
- $('connectionStatus').textContent=status.account?`NodeCanvas 원본 연결됨 · ChatGPT 로그인됨 · 이미지 전용 (플랜 ${status.account.plan||'미확인'})`:
-   `NodeCanvas 원본 연결됨 · ${status.error||'ChatGPT 로그인 필요'} · 이미지 생성 지원 (텍스트 생성은 미지원)`;
+ $('connectionStatus').textContent=status.account?`DramaForge PC 연결됨 · ChatGPT 로그인됨 · 대본·샷·이미지 생성 사용 가능 (플랜 ${status.account.plan||'미확인'})`:
+   `DramaForge PC 연결됨 · ${status.error||'ChatGPT 로그인 필요'}`;
  return status;
 }
 function stopInstallWatch(){if(installPoll!==null){clearInterval(installPoll);installPoll=null;}}
@@ -482,8 +482,8 @@ function watchInstallation(){
   try{
    if(++checks>75){stopInstallWatch();$('installProgress').textContent='설치 여부를 확인하지 못했습니다. PC에서 설치 완료 메시지를 확인하세요.';return;}
    const status=await bridge.presence();
-   if(status.app==='NodeCanvas'){
-    stopInstallWatch();$('installProgress').textContent='NodeCanvas PC 연결 앱을 확인했습니다. 「PC 연결 앱 열기」를 눌러 웹주소를 승인하세요.';
+   if(status.app==='DramaForge'){
+    stopInstallWatch();$('installProgress').textContent='DramaForge PC 연결 앱을 확인했습니다. 「PC 연결 앱 열기」를 눌러 웹주소를 승인하세요.';
     await prewarmNativeActivation();
    }
   }catch{}finally{inFlight=false;}
@@ -491,19 +491,19 @@ function watchInstallation(){
 }
 $('installConnectorBtn').onclick=async()=>{
  const url=installFileForPlatform();
- if(!url){$('installProgress').textContent='현재 자동 실행 연결은 Windows 네이티브 설치만 지원합니다. macOS/Linux 연결은 추후 검증 후 제공합니다.';return;}
+ if(!url){$('installProgress').textContent='현재 Windows용 네이티브 설치가 준비되어 있습니다. 다른 운영체제 설치는 별도 검증이 필요합니다. macOS/Linux 연결은 추후 검증 후 제공합니다.';return;}
  try{
   const response=await fetch(url,{method:'HEAD',cache:'no-store'});
   if(!response.ok||!response.headers.get('content-type')?.match(/application|octet-stream|binary/i))throw new Error('네이티브 설치 파일이 아직 배포되지 않았습니다. Windows 빌드 산출물을 올려야 합니다.');
-  const a=document.createElement('a');a.href=url;a.download='NodeCanvas-Setup-v1.13.0.exe';document.body.append(a);a.click();a.remove();
-  $('installProgress').textContent='원본 NodeCanvas 설치 프로그램을 실행한 뒤 「PC 연결 앱 열기」를 누르세요. 웹주소 승인창이 나타납니다.';
+  const a=document.createElement('a');a.href=url;a.download='DramaForge-Setup-Windows.exe';document.body.append(a);a.click();a.remove();
+  $('installProgress').textContent='DramaForge 전용 설치 프로그램을 실행한 뒤 「PC 연결 앱 열기」를 누르세요. 웹주소 승인창이 나타납니다.';
  }catch(e){$('installProgress').textContent=e.message;}
 };
 async function startNativeConnection(){
- $('connectionStatus').textContent='NodeCanvas 원본 PC 앱을 열도록 요청합니다. Windows의 앱 열기 창을 확인하세요.';
+ $('connectionStatus').textContent='DramaForge PC 앱을 열도록 요청합니다. Windows의 앱 열기 창을 확인하세요.';
  try{
   await bridge.activate({origin:window.location.origin,onProgress:(message)=>{$('connectionStatus').textContent=message;}});
-  await renderConnectedStatus();stopInstallWatch();notice('NodeCanvas PC 연결이 승인되었습니다.');return true;
+  await renderConnectedStatus();stopInstallWatch();notice('DramaForge PC 연결이 승인되었습니다.');return true;
  }catch(e){setDisconnected(connectionErrorMessage(e));return false;}
 }
 async function autoConnect({silent=false}={}){
@@ -520,8 +520,8 @@ async function checkStatus(){
 }
 $('statusBtn').onclick=checkStatus;
 $('bridgeHealthBtn').onclick=()=>{
- const tab=window.open('http://127.0.0.1:7330/api/ready','_blank','noopener,noreferrer');
- if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7330/api/ready 를 주소창에 직접 입력하세요.';
+ const tab=window.open('http://127.0.0.1:7331/health','_blank','noopener,noreferrer');
+ if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7331/health 를 주소창에 직접 입력하세요.';
 };
 $('bridgeRepairBtn').hidden=true; // Old .cmd recovery is not a native v1.8.1 upgrade path.
 $('loginBtn').onclick=async()=>{

@@ -1,13 +1,13 @@
 {
-  "name": "dramaforge-v1.8.2",
-  "version": "1.8.2",
+  "name": "dramaforge-v1.9.0",
+  "version": "1.9.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node dev-server.mjs",
     "bridge": "node bridge/server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check web/nodecanvas-native-client.mjs && node --check web/main.mjs && node --check web/canon.mjs && node --check web/guards.mjs && node --check web/planning.mjs && node --check web/series.mjs && node --check web/local-review.mjs && node --check web/narrative.mjs && node --check web/narrative-ui.mjs && node --check bridge/provider.mjs && node --check bridge/activation.mjs && node --check bridge/server.mjs && npm test",
+    "check": "node --check web/nodecanvas-native-client.mjs && node --check web/main.mjs && node --check web/canon.mjs && node --check web/guards.mjs && node --check web/planning.mjs && node --check web/series.mjs && node --check web/local-review.mjs && node --check web/narrative.mjs && node --check web/narrative-ui.mjs && node --check bridge/provider.mjs && node --check bridge/nodecanvas-codex.mjs && node --check bridge/activation.mjs && node --check bridge/server.mjs && npm test",
     "build": "node scripts/build.mjs"
   },
   "engines": {

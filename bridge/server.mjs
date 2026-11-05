@@ -6,11 +6,11 @@ import path from 'node:path';
 import {CodexBridgeProvider} from './provider.mjs';
 import {ActivationGrants,validActivationOrigin} from './activation.mjs';
 
-export const VERSION='1.8.1';
+export const VERSION='1.9.0';
 const STABLE_ORIGIN='https://dramaforge-lemon-ten.vercel.app';
 const DEFAULT_ORIGINS=[STABLE_ORIGIN,'http://127.0.0.1:4173','http://localhost:4173'];
 export function verifyToken(header,token){if(typeof header!=='string'||typeof token!=='string')return false;const a=Buffer.from(header),b=Buffer.from(`Bearer ${token}`);return a.length===b.length&&timingSafeEqual(a,b);}
-export function validateRequest(body){if(!body||!['shots','image','canon','review'].includes(body.mode)||typeof body.prompt!=='string'||!body.prompt.trim()||body.prompt.length>28000)throw new Error('유효한 작업 유형과 28,000자 이하 프롬프트가 필요합니다.');const images=body.images??[];if(!Array.isArray(images)||images.length>3||images.some(s=>typeof s!=='string'||s.length>7_000_000))throw new Error('참조 이미지는 최대 3장, 각 5MB까지 허용합니다.');return{mode:body.mode,prompt:body.prompt.trim(),images};}
+export function validateRequest(body){if(!body||!['shots','image','canon','review','planning'].includes(body.mode)||typeof body.prompt!=='string'||!body.prompt.trim()||body.prompt.length>28000)throw new Error('유효한 작업 유형과 28,000자 이하 프롬프트가 필요합니다.');const images=body.images??[];if(!Array.isArray(images)||images.length>3||images.some(s=>typeof s!=='string'||s.length>7_000_000))throw new Error('참조 이미지는 최대 3장, 각 5MB까지 허용합니다.');if(body.mode!=='image'&&images.length)throw new Error('텍스트 분석 작업은 이미지를 받지 않습니다.');return{mode:body.mode,prompt:body.prompt.trim(),images};}
 
 export async function createBridge({port=7331,origins=DEFAULT_ORIGINS,activationDir=null,provider=new CodexBridgeProvider(),now=()=>Date.now()}={}){
   const allow=new Set(origins);
@@ -64,7 +64,7 @@ export async function createBridge({port=7331,origins=DEFAULT_ORIGINS,activation
         return reply(res,200,{token,version:VERSION});
       }
       if(route==='/api/status')return reply(res,200,await provider.status());
-      if(route==='/api/login')return reply(res,200,await provider.login());
+      if(route==='/api/login')return reply(res,200,await provider.login(data.remember===true));
       if(route==='/api/jobs'){
         if(active)return reply(res,409,{error:'다른 AI 작업이 이미 실행 중입니다.'});
         const jobInput=validateRequest(data),id=randomUUID(),ctrl=new AbortController(),job={id,state:'running',message:'Codex 요청 처리 중',createdAt:now()};

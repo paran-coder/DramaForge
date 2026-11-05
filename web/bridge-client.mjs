@@ -1,7 +1,7 @@
 // NodeCanvas-style native invocation: the browser never receives a token merely
 // because its Origin appears on a CORS allowlist.
 const ENDPOINTS=['http://127.0.0.1:7331','http://localhost:7331'];
-const SESSION_KEY='dramaforge-native-session-v1';
+const SESSION_KEY='dramaforge-native-session-v1.9.0';
 const STABLE_ORIGIN='https://dramaforge-lemon-ten.vercel.app';
 export function hex(bytes){return Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');}
 export async function makeActivation(origin,cryptoImpl=globalThis.crypto){
@@ -46,6 +46,6 @@ export class BridgeClient {
  async connect(){return this.reconnect();}
  async pair(){throw new Error('연결코드 방식은 더 이상 지원하지 않습니다.');}
  status(){return this.request('status',{});}
- async login(){if(!this.token)throw new Error('먼저 PC 연결 앱에서 승인이 필요합니다.');return this.request('login',{});}
+ async login(){if(!this.token)throw new Error('먼저 PC 연결 앱에서 승인이 필요합니다.');return this.request('login',{remember:true});}
  async job(mode,prompt,images=[]){if(!this.token)throw new Error('먼저 PC 연결 앱에서 승인이 필요합니다.');const {id}=await this.request('jobs',{mode,prompt,images});const deadline=Date.now()+(mode==='image'?620000:200000);while(Date.now()<deadline){await new Promise(resolve=>setTimeout(resolve,900));const job=await this.request('job',{id});if(job.state==='completed')return job.result;if(['failed','cancelled'].includes(job.state))throw new Error(job.message||'Codex 작업 실패');}await this.request('cancel',{id}).catch(()=>{});throw new Error('작업 시간 제한 초과');}
 }

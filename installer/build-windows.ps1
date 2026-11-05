@@ -11,15 +11,15 @@ try{
  New-Item -ItemType Directory -Path $temp -Force | Out-Null
  $source=Join-Path $root 'installer\NodeCanvasPort.cs'
  $unSource=Join-Path $root 'installer\NodeCanvasUninstallPort.cs'
- $launcher=Join-Path $temp '2026-10-31-DramaForgeConnect-v1.8.1.exe'
+ $launcher=Join-Path $temp '2026-10-31-DramaForgeConnect-v1.9.0.exe'
  & $csc /nologo /codepage:65001 /target:winexe /define:LAUNCHER ("/out:"+$launcher) @refs $source
  if($LASTEXITCODE -ne 0){throw 'Launcher compilation failed'}
  $launcherSelf=Start-Process -FilePath $launcher -ArgumentList '--self-test' -PassThru -Wait
  if($launcherSelf.ExitCode -ne 0){throw 'Launcher self-test failed'}
- $uninstaller=Join-Path $temp '2026-10-31-Uninstall-v1.8.1.exe'
+ $uninstaller=Join-Path $temp '2026-10-31-Uninstall-v1.9.0.exe'
  $owned=Join-Path $temp 'owned-files.txt'
- $files=@('2026-10-31-DramaForgeConnect-v1.8.1.exe','2026-10-31-Uninstall-v1.8.1.exe')
- $runtimeFiles=@('server.mjs','activation.mjs','provider.mjs')
+ $files=@('2026-10-31-DramaForgeConnect-v1.9.0.exe','2026-10-31-Uninstall-v1.9.0.exe')
+ $runtimeFiles=@('server.mjs','activation.mjs','provider.mjs','nodecanvas-codex.mjs')
  foreach($f in $runtimeFiles){$files+=('bridge/'+$f)}
  $files+=@('licenses/2026-10-31-Node-LICENSE.txt','licenses/2026-10-31-Codex-LICENSE.txt')
  [IO.File]::WriteAllLines($owned,$files)
