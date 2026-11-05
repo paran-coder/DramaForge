@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using System.Threading.Tasks;
 
 [assembly: System.Reflection.AssemblyTitle("DramaForge Connector Setup")]
-[assembly: System.Reflection.AssemblyVersion("1.7.1.0")]
+[assembly: System.Reflection.AssemblyVersion("1.7.2.0")]
 
 internal static class Program {
  [STAThread]
@@ -29,7 +29,7 @@ internal sealed class Installer:Form {
  readonly Label summary;
  bool running;
  public Installer() {
-  Text="DramaForge AI 연결 도우미 · 1.7.1";
+  Text="DramaForge AI 연결 도우미 · 1.7.2";
   ClientSize=new Size(590,340);MinimumSize=Size;MaximumSize=Size;
   Font=new Font("Segoe UI",10);StartPosition=FormStartPosition.CenterScreen;
   Controls.Add(new Label{Text="DramaForge — ChatGPT Codex 연결",Font=new Font(Font.FontFamily,17,FontStyle.Bold),Location=new Point(22,18),Size=new Size(530,42)});

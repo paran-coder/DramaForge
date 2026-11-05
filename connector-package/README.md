@@ -1,4 +1,4 @@
-# DramaForge Connector v1.7.1
+# DramaForge Connector v1.7.2
 
 The helper runs only on 127.0.0.1:7331 and permits the exact origin `https://dramaforge-lemon-ten.vercel.app`. A manual pairing code is no longer needed. It requires Node.js 20+ and OpenAI Codex CLI already installed, with optional interactive ChatGPT login from the web app.
 

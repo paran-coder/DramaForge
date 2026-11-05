@@ -18,7 +18,7 @@ test('installer UX provides one setup action, not manual zip/node/codex steps',(
  assert.match(main,/await bridge\.connect\(\)/);
 });
 test('downloaded installer references the exact checksum of bundled bridge',()=>{
- const zip=readFileSync(path.join(root,'web/downloads/DramaForge-Connector-v1.7.1.zip'));
+ const zip=readFileSync(path.join(root,'web/downloads/DramaForge-Connector-v1.7.2.zip'));
  assert.equal(zip.toString('ascii',0,2),'PK');
  const digest=createHash('sha256').update(zip).digest('hex');
  assert.ok(zip.length>3000);

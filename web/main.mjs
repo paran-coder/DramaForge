@@ -450,37 +450,79 @@ function installFileForPlatform(){
  const platform=String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'').toLowerCase();
  return /win/.test(platform)?windowsSetup:'/downloads/DramaForge-Setup-Unix.sh';
 }
+function connectionErrorMessage(error){
+ const message=String(error?.message||error||'연결 오류');
+ if(message.includes('브리지에 연결할 수 없습니다'))return '로컬 연결 프로그램이 응답하지 않습니다. 설치 도우미를 실행했는지 확인하세요. Windows라면 %LOCALAPPDATA%\\Programs\\DramaForgeConnector\\logs 에서 실행 오류를 확인할 수 있습니다. 브라우저의 로컬 네트워크 연결 권한도 확인하세요.';
+ return message;
+}
+function setDisconnected(message){
+ bridge.token=null;
+ $('connectBtn').textContent='◉ AI 연결';
+ $('firstInstallHelp').hidden=false;
+ $('connectionStatus').textContent=message;
+ $('loginBtn').title='연결 도우미가 감지되지 않으면 설치 안내가 나타납니다.';
+}
+async function renderConnectedStatus(){
+ const status=await bridge.status();
+ $('firstInstallHelp').hidden=true;
+ $('connectBtn').textContent=status.account?'◉ AI 연결됨':'◉ 브리지 연결';
+ $('connectionStatus').textContent=status.account?`브리지 연결됨 · ChatGPT 로그인됨 (플랜 ${status.account.plan||'미확인'})`:
+   `브리지 연결됨 · Codex ${status.installed?'실행 확인':'실행 오류'} · ${status.error||'ChatGPT 로그인 필요'}`;
+ return status;
+}
 function stopInstallWatch(){if(installPoll!==null){clearInterval(installPoll);installPoll=null;}}
 function watchInstallation(){
- stopInstallWatch();let checks=0;
+ stopInstallWatch();let checks=0,inFlight=false;
  installPoll=setInterval(async()=>{
-  if(bridge.token){stopInstallWatch();return;}
-  if(++checks>120){stopInstallWatch();$('installProgress').textContent='아직 연결되지 않았습니다. 설치 파일 실행 상태를 확인한 뒤 자동 연결을 다시 누르세요.';return;}
-  try{await bridge.connect();stopInstallWatch();$('installProgress').textContent='연결 도우미가 실행되었습니다.';await checkStatus();$('connectBtn').textContent='◉ 연결됨';$('firstInstallHelp').hidden=true;}catch{}
+  if(inFlight)return;
+  if(++checks>120){stopInstallWatch();$('installProgress').textContent='연결 대기 시간이 지났습니다. 설치 도우미 실행 결과와 PC의 로그 폴더를 확인한 뒤 다시 연결을 누르세요.';return;}
+  inFlight=true;
+  try{
+   await bridge.connect();
+   stopInstallWatch();$('installProgress').textContent='브리지 실행이 확인되었습니다.';
+   await renderConnectedStatus();
+  }catch(e){if(checks%5===0)$('installProgress').textContent=`브리지 실행 대기 중 (${checks*2}초)… ${connectionErrorMessage(e)}`;}
+  finally{inFlight=false;}
  },2000);
 }
 $('installConnectorBtn').onclick=()=>{
  const url=installFileForPlatform();const a=document.createElement('a');a.href=url;a.download=url.split('/').pop();document.body.append(a);a.click();a.remove();
- $('installProgress').textContent=/Windows/i.test(url)?'다운로드된 Windows 설치 파일을 한 번 실행하고 보안 확인을 승인하세요. Node.js·Codex 및 연결 프로그램 설치가 자동 진행됩니다.':'다운로드된 macOS/Linux 설치 스크립트를 사용자 동의 아래 실행하세요. 필수 구성요소가 자동 준비됩니다.';
+ $('installProgress').textContent=/Windows/i.test(url)?'설치 프로그램을 열고 완료 메시지가 표시되는지 확인하세요. 완료 후 연결 상태를 자동 확인합니다.':'설치 스크립트를 직접 실행하세요. 완료 후 연결 상태를 자동 확인합니다.';
  watchInstallation();
 };
 async function autoConnect({silent=false}={}){
- $('connectionStatus').textContent='로컬 연결 프로그램 확인 중…';
+ if(!silent)$('connectionStatus').textContent='로컬 연결 확인 중…';
  try{
-  await bridge.connect();$('connectBtn').textContent='◉ 연결됨';
-  await checkStatus();$('firstInstallHelp').hidden=true;stopInstallWatch();
-  if(!silent)notice('로컬 Codex 브리지에 연결되었습니다.');
+  await bridge.connect();await renderConnectedStatus();stopInstallWatch();
+  if(!silent)notice('로컬 Codex 브리지와 연결되었습니다.');
   return true;
  }catch(e){
-  if(!silent){$('connectionStatus').textContent='연결 프로그램이 없습니다. 아래의 설치 시작 버튼으로 구성요소를 자동 설치할 수 있습니다.';$('firstInstallHelp').hidden=false;}
-  else $('connectionStatus').textContent='연결 전';
+  setDisconnected(silent?'연결 전':connectionErrorMessage(e));
   return false;
  }
 }
 $('connectBtn').onclick=async()=>{$('connectDialog').showModal();await autoConnect();};
 $('autoConnectBtn').onclick=()=>autoConnect();
-async function checkStatus(){try{if(!bridge.token){const ok=await autoConnect({silent:true});if(!ok){$('connectionStatus').textContent='연결 프로그램을 실행한 뒤 다시 시도하세요.';return;}}const status=await bridge.status();$('connectionStatus').textContent=status.account?`ChatGPT 로그인됨 · 플랜 ${status.account.plan||'미확인'} (실제 이용 가능 여부는 작업 실행으로 검증)`:`Codex 설치 ${status.installed?'확인':'미확인'} · 로그인 필요${status.error?': '+status.error:''}`;}catch(e){$('connectionStatus').textContent=e.message;}}
+async function checkStatus(){
+ try{if(!bridge.token)await bridge.connect();await renderConnectedStatus();}
+ catch(e){setDisconnected(connectionErrorMessage(e));}
+}
 $('statusBtn').onclick=checkStatus;
-$('loginBtn').onclick=async()=>{const tab=window.open('about:blank','_blank');try{const r=await bridge.login();if(r.authUrl){if(tab)tab.location.href=r.authUrl;else notice('팝업 차단을 해제하고 다시 시도하세요.');$('connectionStatus').textContent='공식 ChatGPT 로그인 화면에서 인증 후 상태 확인을 누르세요.';}else{tab?.close();await checkStatus();}}catch(e){tab?.close();$('connectionStatus').textContent=e.message;}};
+$('loginBtn').onclick=async()=>{
+ // A blank tab must be opened synchronously before waiting for the local bridge,
+ // otherwise browser popup blockers may prevent the official authentication page.
+ const tab=window.open('about:blank','_blank');
+ $('connectionStatus').textContent='연결 프로그램과 Codex 로그인 상태를 확인하는 중…';
+ try{
+  if(!bridge.token)await bridge.connect();
+  const result=await bridge.login();
+  $('connectBtn').textContent='◉ 브리지 연결';$('firstInstallHelp').hidden=true;
+  if(result.authUrl){
+   if(!tab){$('connectionStatus').textContent='로그인 창이 차단되었습니다. 팝업 허용 후 다시 시도하세요.';return;}
+   tab.location.href=result.authUrl;
+   $('connectionStatus').textContent='ChatGPT 공식 로그인 창이 열렸습니다. 인증 완료 후 상태 확인을 누르세요.';
+  }else{tab?.close();await renderConnectedStatus();}
+ }catch(e){tab?.close();setDisconnected(connectionErrorMessage(e));}
+};
 narrativeUI=initNarrativeUI({getProject:()=>project,getEpisode:()=>selectedEpisodeNumber,persist:flush,afterChange:()=>{renderSeries();renderShots();renderDetail();renderLiveContinuity();},notice});
 try{projects=await listProjects();if(!projects.length){const p=newProject('첫 번째 드라마');p.onboarding={status:'pending'};projects=[p];await persist(p);}project=projects[0];selected=project.shots[0]?.id||null;resetWriterScope();render();$('saveState').textContent='● 브라우저에 저장됨';if(needsOnboarding(project))showEntry();void autoConnect({silent:true});}catch(e){notice('IndexedDB 초기화 실패: '+e.message);$('saveState').textContent='저장 기능 오류';}

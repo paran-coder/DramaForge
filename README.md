@@ -1,4 +1,4 @@
-# DramaForge v1.7.1 — 브라우저 AI 연결 자동 설치 및 제작 관리
+# DramaForge v1.7.2 — 브라우저 AI 연결 자동 설치 및 제작 관리
 
 사용자의 공개 서비스 계획에 따라 **정적 브라우저 웹앱 + 사용자 PC의 Codex 로컬 브리지** 구조를 유지합니다. 웹사이트는 Vercel 배포용 정적 파일이며, 작품은 해당 브라우저의 IndexedDB에 저장합니다. Codex 요청을 명시적으로 실행할 때 대본·프롬프트가 로컬 연결 프로그램을 통해 OpenAI로 전송될 수 있습니다.
 
@@ -37,7 +37,7 @@ npm run dev
 
 ## 검증 상태
 
-- `npm run check`: v1.7.1에서 **135/135** 자동 테스트 통과 (기존 기능 + 설치 검증 코드)
+- `npm run check`: v1.7.2에서 **135/135** 자동 테스트 통과 (기존 기능 + 설치 검증 코드)
 - `python tests/browser-narrative-smoke.py`: 격리 Chromium의 실제 DOM 클릭·작가 승인·시간축·색상·1440px/390px 화면 테스트 **PASS**
 - 이 브라우저 시험은 네트워크를 통하지 않는 메모리상 모의 프로젝트로 실행했습니다. **실제 IndexedDB, Codex 계정 로그인 및 Vercel Preview/운영 배포는 미검증**입니다.
 - 기존 `DramaForge-Connector-v1.5.0.zip`은 그대로 유지했습니다. 브리지 프로토콜을 수정하지 않았습니다.
@@ -67,19 +67,24 @@ npm run dev
 - 기존 대본·정설·로컬 저장·Codex 브리지 로직 변경 없음
 - 상세 절차: `docs/OG_ANALYTICS.md`
 
-## v1.7.1 implementation scope
+## v1.7.2 implementation scope
 Two onboarding paths, local multi-file planning import, independent how-to page, and code-free connection to an already installed and running local helper. Browsers cannot silently install local executables: the first installation still requires explicit user action. Production deployment remains a separate step.
 
-### v1.7.1 빠른 시작
+### v1.7.2 빠른 시작
 `npm run check && npm run build`로 확인합니다. `npm run dev`로 로컬 정적 웹을 실행합니다. 작품을 처음 열면 **AI와 새 작품 기획** 또는 **기존 기획 가져오기**를 고릅니다. 상세 도움말은 `/guide.html`입니다. AI 연결은 코드 입력 없이 기존 로컬 도우미를 감지하지만, 첫 사용자는 운영체제의 권한 승인하에 도우미를 실행해야 합니다. 무인 자동 설치 기능은 포함되지 않습니다.
 
-[배포 및 보안 상세](docs/RELEASE_v1.7.1.md) · [검증 보고서](docs/TEST_REPORT_v1.7.1.md)
+[배포 및 보안 상세](docs/RELEASE_v1.7.2.md) · [검증 보고서](docs/TEST_REPORT_v1.7.2.md)
 
 
-## v1.7.1 — Codex 연결 도우미 자동 설치 흐름
+## v1.7.2 — Codex 연결 도우미 자동 설치 흐름
 
 - 앱의 **AI 연결**은 실행 중인 브리지를 먼저 감지합니다. 없으면 **연결 도우미 설치 시작**을 표시합니다.
 - Windows 설치 파일은 단일 `DramaForge-Setup-Windows.cmd`이며, 사용자가 최초 한 번 다운로드된 파일을 실행·승인하면 자체적으로 Node.js v24.14.1, Codex v0.149.1, 연결 프로그램을 설치해 실행하고 시작 프로그램에 등록합니다. SHA-256으로 다운로드 무결성을 검사하며 관리자 권한을 요구하지 않습니다.
 - macOS/Linux는 `DramaForge-Setup-Unix.sh`를 제공하며, 사용자 동의하에 스크립트를 실행한 뒤 Node.js/Codex를 사용자 영역에 설치합니다. macOS는 LaunchAgent, Linux는 XDG 자동 시작 항목을 생성합니다. 운영체제별 실제 설치 테스트는 아직 수행하지 못했습니다.
 - 브라우저는 사용자 동의 없이 임의 실행 파일을 설치할 수 없습니다. 따라서 **최초 파일 실행과 OS 보안 승인**은 필수이며 이후에는 자동 연결됩니다. 설치·인증 상태를 확인할 때 사용자 작품은 Vercel에 전송되지 않습니다.
 - 설치용 파일은 `web/downloads/`에 있고, 정적 빌드에 포함됩니다. **실사용 배포 전 코드 서명, 운영체제별 설치 및 제거 검증이 필요합니다.**
+
+
+## v1.7.2 연결 문제 수정
+
+Windows 자동 설치 파일의 PowerShell 구분자 검색 오류를 수정하고, 설치 후 브리지 `/health` 응답 확인 및 실패 로그를 추가했습니다. 로그인 버튼에서 브리지 자동 재연결을 수행합니다. 복구 절차: `docs/CONNECTOR_FIX_v1.7.2.md`. 공개 Vercel 주소에 재배포되기 전까지 기존 사용자 PC의 연결은 자동으로 수정되지 않습니다.
