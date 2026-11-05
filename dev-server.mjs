@@ -1,0 +1,4 @@
+import http from 'node:http';import {readFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const root=path.join(path.dirname(fileURLToPath(import.meta.url)),'web');const port=Number(process.env.PORT||4173);
+const mime={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml'};
+http.createServer(async(req,res)=>{try{const name=new URL(req.url,'http://127.0.0.1').pathname;const target=path.resolve(root,'.'+(name==='/'?'/index.html':name));if(!target.startsWith(root+path.sep))throw Error('bad path');const data=await readFile(target);res.setHeader('Content-Type',mime[path.extname(target)]||'application/octet-stream');res.setHeader('Cache-Control','no-store');res.end(data);}catch{res.statusCode=404;res.end('Not found');}}).listen(port,'127.0.0.1',()=>console.log(`DramaForge http://127.0.0.1:${port}`));
