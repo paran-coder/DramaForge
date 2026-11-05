@@ -44,5 +44,17 @@ Codex 로그인·작업 실행은 사용자 PC의 로컬 브리지에서 처리�
 
 상단 `ZIP 백업`을 통해 작품·정설·인과관계·정보 상태·승인 이력·스토리보드 데이터를 보존합니다. 대용량 MP4 원본은 별도로 저장·백업하세요. ZIP 복원 후 서사 기록이 같은 상태로 표시되는지 확인해야 합니다.
 
+## 소셜 공유와 방문 통계 (v1.6.1)
+
+- 공개 사이트 링크를 메신저나 소셜 미디어에 공유하면 DramaForge의 다크 테마 홍보 이미지가 표시되도록 메타태그를 구성했습니다. 실제 썸네일 생성은 배포 후 해당 서비스의 크롤러에 따라 달라집니다.
+- 웹사이트의 대본·캐릭터·정설 데이터는 기존처럼 사용자의 브라우저에 저장됩니다. 웹사이트에서 방문 통계를 활성화하면 Vercel Analytics를 통해 방문 및 페이지 조회 정보가 수집될 수 있으나, 작품 내용은 통계 이벤트로 전송하지 않습니다.
+- 백업과 복원 사용법, Codex 로그인 안내는 이전 버전과 동일합니다.
+
 
 운영 주소: https://dramaforge-lemon-ten.vercel.app/ (배포 완료 후 사용 가능).
+
+## v1.7.0 first-use changes
+When creating a new project, choose AI co-planning or existing planning materials. TXT/MD/JSON files may be added as unapproved reference material; none becomes canon automatically. Visit the new how-to page from the header. If the connector is already running for this site, press AI Connect to connect without entering a pairing code. First-time installation of the local helper requires OS/browser approval.
+
+### 웹에서 새로 제공되는 도움말
+배포 후 상단의 **사용방법**을 누르거나 `/guide.html`로 이동합니다. 새 작품 시작 화면에서는 공동 기획과 기존 기획 자료 가져오기를 선택합니다. 참고 자료는 TXT/MD/JSON만 직접 읽습니다. AI가 참고하는 것은 제한된 분량의 발췌이므로 중요한 부분은 대화에서 지정하세요. 연결 도우미는 코드를 입력하지 않고 자동 연결하지만, 최초 PC 설치·실행 동의는 필요합니다.

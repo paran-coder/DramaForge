@@ -7,6 +7,7 @@ import {initNarrativeUI} from './narrative-ui.mjs';
 import {ensureSeries,setWorkflow,editOutline,createEpisode,editEpisode,createSeriesRecord,decideSeriesRecord,proposeSeriesChange,resolveSeriesChange,linkShotEpisode,episodeState,inspectEpisode,seriesPromptContext} from './series.mjs';
 import {projectToZip,projectFromZip} from './zip.mjs';
 import {BridgeClient} from './bridge-client.mjs';
+import {startProject,needsOnboarding,addImportedMaterials,removeImportedMaterial,importedPlanningContext,INTERVIEW_SEED} from './onboarding.mjs';
 import {ensureGuards,addGuardRule,activeRules,staleRules,addShotClaim,removeShotClaim,inspectShot,attestShotReview,assertShotGuardReady,inspectProposal} from './guards.mjs';
 import {ensureCanon,createCanonCandidate,decideCanonCandidate,reopenDeferredDecision,requestReconsideration,requestCanonChange,resolveCanonChange,calculateChangeImpact,addShotDependency,linkShotToCanon,createWhatIfBranch,addWhatIfIdea,proposeWhatIfToMain,buildDirectorPrompt,activeCanonContext,verifyCanonIntegrity,parseDecisionProposals} from './canon.mjs';
 const $=id=>document.getElementById(id),bridge=new BridgeClient();
@@ -21,7 +22,7 @@ function activeEpisode(){return project?.series?.episodes.find(e=>e.number===sel
 function renderShotTarget(){const el=$('shotGenerationScope');if(el)el.textContent=writerScope==='global'?'샷 생성 대상: 작품 전체 대본 (기획·AI 대화에서 집필 범위를 변경할 수 있습니다.)':`샷 생성 대상: ${writerScope}화 대본 (선택 회차 샷만 교체하며 다른 회차는 보존)`;}
 function resetWriterScope(){writerScope='global';selectedEpisodeNumber=null;}
 function projectList(){const box=$('projectList');box.replaceChildren();for(const p of projects){const btn=document.createElement('button');btn.className='project-item'+(p.id===project?.id?' active':'');btn.textContent=p.title||'제목 없음';const sub=document.createElement('span');sub.className='meta';sub.textContent=`${p.shots.length} shots · ${p.updatedAt?.slice(0,10)||''}`;btn.append(sub);btn.onclick=async()=>{if(p.id===project?.id)return;await flush();project=p;selected=p.shots[0]?.id||null;resetWriterScope();render();};box.append(btn);}}
-function render(){if(!project)return;ensureCanon(project);ensureGuards(project);ensurePlanning(project);ensureSeries(project);ensureNarrative(project);projectList();$('projectHeading').textContent=project.title;$('titleInput').value=project.title;$('scriptInput').value=project.script;$('bibleInput').value=project.visualBible;$('scriptLength').textContent=`${project.script.length.toLocaleString()}자`;$('revisionCount').textContent=`Revision ${project.revision}`;renderReference();renderShots();renderDetail();renderCanon();renderSeries();renderWriter();renderShotTarget();}
+function render(){if(!project)return;ensureCanon(project);ensureGuards(project);ensurePlanning(project);ensureSeries(project);ensureNarrative(project);projectList();$('projectHeading').textContent=project.title;$('titleInput').value=project.title;$('scriptInput').value=project.script;$('bibleInput').value=project.visualBible;$('scriptLength').textContent=`${project.script.length.toLocaleString()}자`;$('revisionCount').textContent=`Revision ${project.revision}`;renderReference();renderShots();renderDetail();renderCanon();renderSeries();renderWriter();renderShotTarget();renderEntry();}
 function renderReference(){const area=$('referencePreview');area.replaceChildren();if(project.characterReference?.dataUrl){const img=document.createElement('img');img.src=project.characterReference.dataUrl;img.alt='캐릭터 참조 이미지';area.append(img);}}
 function renderShots(){const list=$('shotList');list.replaceChildren();$('shotCount').textContent=project.shots.length;const approved=project.shots.filter(s=>s.status==='approved').length;$('approvalSummary').textContent=`승인 ${approved}개 / 검토 필요 ${project.shots.filter(s=>s.status==='needs_review').length}개`;$('revisionCount').textContent=`Revision ${project.revision}`;
  if(!project.shots.length){const p=document.createElement('p');p.className='empty';p.textContent='대본을 분석하거나 샷을 수동으로 추가하세요.';list.append(p);return;}
@@ -268,7 +269,9 @@ $('candidateBtn').onclick=async()=>{try{const screening=inspectProposal(project,
 $('extractDecisionBtn').onclick=async()=>{if(!bridge.token){$('connectDialog').showModal();return;}setBusy(true);try{const context=activeCanonContext(project,{maxLength:9000});const prompt=`${context}
 [대본 및 기획 기준에서 명시적으로 결정된 후보만 추출. 결론을 창작하지 말 것]
 ${project.script}
-${project.visualBible}`;if(prompt.length>27000)throw Error('내용이 너무 깁니다. 일부 장면을 선택해 다시 시도하세요.');const result=await bridge.job('canon',prompt);const proposals=parseDecisionProposals(result.text);let count=0,skipped=0;for(const data of proposals){try{createCanonCandidate(project,data,{source:'ai'});count++;}catch{skipped++;}}await canonCommit(`AI 후보 ${count}개 등록, 중복/오류 ${skipped}개 보류. 작가 검토가 필요합니다.`);}catch(e){notice('정설 후보 추출 실패: '+e.message);}finally{setBusy(false);}};
+${project.visualBible}
+[승인 전 참고 자료 — AI가 추출한 결정은 후보만 생성]
+${importedPlanningContext(project,5000)}`;if(prompt.length>27000)throw Error('내용이 너무 깁니다. 일부 장면을 선택해 다시 시도하세요.');const result=await bridge.job('canon',prompt);const proposals=parseDecisionProposals(result.text);let count=0,skipped=0;for(const data of proposals){try{createCanonCandidate(project,data,{source:'ai'});count++;}catch{skipped++;}}await canonCommit(`AI 후보 ${count}개 등록, 중복/오류 ${skipped}개 보류. 작가 검토가 필요합니다.`);}catch(e){notice('정설 후보 추출 실패: '+e.message);}finally{setBusy(false);}};
 $('createBranchBtn').onclick=async()=>{try{const branch=createWhatIfBranch(project,{name:$('branchName').value,premise:$('branchPremise').value});selectedBranch=branch.id;await canonCommit('실험 분기를 만들었습니다. 본편 정설은 변경되지 않았습니다.');$('branchName').value='';$('branchPremise').value='';}catch(e){notice(e.message);}};
 $('addBranchIdeaBtn').onclick=async()=>{try{if(!selectedBranch)throw Error('실험 분기를 먼저 선택하세요.');addWhatIfIdea(project,selectedBranch,{title:$('branchIdeaTitle').value,statement:$('branchIdeaStatement').value});await canonCommit('실험안은 분기에만 저장했습니다.');$('branchIdeaTitle').value='';$('branchIdeaStatement').value='';}catch(e){notice(e.message);}};
 // ---- v1.4.0 series ledger and automatic episode continuity panel ----
@@ -369,7 +372,46 @@ $('writerScopeSelect').onchange=e=>{writerScope=e.target.value;if(writerScope!==
 $('writerScriptInput').oninput=e=>{if(writerScope==='global')updateScript(e.target.value,'writer');else{const n=Number(writerScope);editEpisode(project,n,{script:e.target.value});$('writerScriptLength').textContent=`${e.target.value.length.toLocaleString()}자`;scheduleSave();renderShots();$('reviewStatus').textContent='회차 원고 수정 · AI 재검토 필요';renderLiveContinuity();narrativeUI?.render();scheduleLocalRisks();}};
 $('bibleInput').oninput=e=>{if(project.visualBible!==e.target.value){project.visualBible=e.target.value;invalidateApprovals(project,'비주얼 바이블 수정');scheduleSave();renderShots();$('reviewStatus').textContent='기획 기준 변경 · AI 재검토 필요';}};
 $('addShotDependencyBtn').onclick=async()=>{const shot=activeShot();if(!shot)return;const candidates=project.shots.filter(x=>x.id!==shot.id);if(!candidates.length)return notice('선행 샷이 없습니다.');const options=candidates.map((x,i)=>`${i+1}. ${x.scene} / ${x.title}`).join('\n');const value=window.prompt(`의존할 선행 샷 번호를 입력하세요.\n${options}`);if(value===null)return;const index=Number(value)-1;if(!Number.isInteger(index)||!candidates[index])return notice('올바른 번호를 입력하세요.');try{addShotDependency(project,shot.id,candidates[index].id);await flush();renderDetail();notice('선행 샷 의존성을 등록했습니다. 정설 변경 시 후속 샷까지 영향 범위를 추적합니다.');}catch(e){notice(e.message);}};
-$('newProjectBtn').onclick=async()=>{await flush();const p=newProject(`새 작품 ${projects.length+1}`);projects.unshift(p);project=p;selected=null;resetWriterScope();await persist();render();showWorkspace('writer');};
+function showEntry(){if(!$('startDialog').open)$('startDialog').showModal();}
+function renderEntry(){
+ if(!project)return;
+ const mode=project.onboarding?.mode;
+ $('entryLabel').textContent=mode==='co-create'?'새 작품 · AI 공동 기획':mode==='import'?'기존 기획 · 참고 자료 기반':'작품 시작 방식 선택';
+ const docs=project.importedMaterials||[];
+ $('importSummary').textContent=docs.length?`참고 자료 ${docs.length}개 · 승인 정설과 분리 저장`:'AI와 새 기획을 시작하거나 기존 기획 자료를 가져올 수 있습니다.';
+ $('materialStatus').textContent=docs.length?`가져온 참고 문서: ${docs.map(d=>d.name).join(', ').slice(0,280)}`:'기획서·캐릭터·전체 줄거리·대본을 함께 가져올 수 있습니다. 현재 TXT/MD/JSON 지원.';
+ $('conversationMode').value=project.onboarding?.conversationStyle||'interview';
+ const list=$('importedDocumentList');list.replaceChildren();for(const item of docs){
+  const row=document.createElement('div');row.className='imported-document';
+  const name=document.createElement('span');name.textContent=`${item.name} · 미승인 참고 문서`;
+  const button=document.createElement('button');button.type='button';button.className='btn ghost small';button.textContent='제외';
+  button.onclick=async()=>{if(!confirm(`참고 자료 ${item.name}을 프로젝트에서 제외하시겠습니까?`))return;removeImportedMaterial(project,item.id);await flush();renderEntry();};
+  row.append(name,button);list.append(row);
+ }
+}
+$('startModeBtn').onclick=showEntry;
+$('closeStartDialogBtn').onclick=()=>$('startDialog').close();
+$('coCreateBtn').onclick=async()=>{
+ startProject(project,'co-create',{conversationStyle:$('conversationMode').value});
+ await flush();renderEntry();$('startDialog').close();showWorkspace('writer');
+ if(!$('planningInput').value.trim() && project.planning.messages.length===0)$('planningInput').value=INTERVIEW_SEED+'\n아이디어: ';
+ $('planningInput').focus();notice('공동 기획을 시작합니다. 아이디어를 입력한 후 AI 기획 검토를 실행하세요.');
+};
+$('importModeBtn').onclick=async()=>{
+ startProject(project,'import',{conversationStyle:$('conversationMode').value});
+ await flush();renderEntry();$('planningFiles').click();
+};
+$('planningFiles').onchange=async e=>{
+ const files=[...(e.target.files||[])];if(!files.length)return;
+ try{
+  if(files.some(f=>f.size>350_000))throw Error('파일당 최대 350KB의 텍스트만 가져올 수 있습니다.');
+  const documents=await Promise.all(files.map(async f=>({name:f.name,content:await f.text()})));
+  addImportedMaterials(project,documents);startProject(project,'import',{conversationStyle:$('conversationMode').value});
+  await flush();renderEntry();$('startDialog').close();showWorkspace('writer');
+  notice(`참고 문서 ${files.length}개 추가 완료. 승인 정설은 변경되지 않았습니다.`);
+ }catch(err){$('materialStatus').textContent='가져오기 실패: '+err.message;}finally{e.target.value='';}
+};
+$('newProjectBtn').onclick=async()=>{await flush();const p=newProject(`새 작품 ${projects.length+1}`);p.onboarding={status:'pending'};projects.unshift(p);project=p;selected=null;resetWriterScope();await persist();render();showWorkspace('writer');showEntry();};
 $('addShotBtn').onclick=async()=>{const shot=safeShots([{scene:`SC${String(project.shots.length+1).padStart(2,'0')}`,title:`샷 ${project.shots.length+1}`,action:'장면의 행동을 입력하세요.',camera:'Medium shot',duration:8}])[0];shot.prompt=compileSeedancePrompt(shot,project.visualBible);project.shots.push(shot);selected=shot.id;project.revision++;await flush();render();};
 $('previewBtn').onclick=async()=>{try{
  const ep=writerScope!=='global'?activeEpisode():null,script=ep?ep.script:project.script;
@@ -401,10 +443,23 @@ $('videoFile').onchange=async e=>{const file=e.target.files?.[0],shot=activeShot
 $('backupBtn').onclick=downloadBackup;
 $('folderBtn').onclick=async()=>{if(!window.showDirectoryPicker)return notice('이 브라우저는 폴더 저장을 지원하지 않습니다. ZIP 백업을 이용하세요.');try{backupHandle=await window.showDirectoryPicker({mode:'readwrite'});await writeFolderBackup(false);}catch(e){if(e.name!=='AbortError')notice('폴더 백업 실패: '+e.message);}};
 $('importFile').onchange=async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>120_000_000)throw new Error('백업 파일이 너무 큽니다.');const p=validateImportedProject(projectFromZip(await file.arrayBuffer()));await verifyCanonIntegrity(p);ensureGuards(p);if(projects.some(q=>q.id===p.id)){if(!confirm('동일한 작품이 이미 있습니다. 새 복사본으로 가져올까요?'))return;p.id=crypto.randomUUID();p.title+=' (복원)';}await flush();projects.unshift(p);project=p;selected=p.shots[0]?.id||null;resetWriterScope();await persist();render();notice('프로젝트 ZIP 복원 완료');}catch(err){notice('복원 실패: '+err.message);}finally{e.target.value='';}};
-$('connectBtn').onclick=()=>{$('connectDialog').showModal();};
-$('pairBtn').onclick=async()=>{const code=$('pairCode').value.trim();try{await bridge.pair(code);$('connectionStatus').textContent='브리지 연결 성공 · Codex 로그인 상태 확인 중';$('connectBtn').textContent='◉ 연결됨';await checkStatus();}catch(e){$('connectionStatus').textContent='연결 실패: '+e.message;}};
-async function checkStatus(){try{const status=await bridge.status();$('connectionStatus').textContent=status.account?`ChatGPT 로그인됨 · 플랜 ${status.account.plan||'미확인'} (실제 이용 가능 여부는 작업 실행으로 검증)`:`Codex 설치 ${status.installed?'확인':'미확인'} · 로그인 필요${status.error?': '+status.error:''}`;}catch(e){$('connectionStatus').textContent=e.message;}}
+async function autoConnect({silent=false}={}){
+ $('connectionStatus').textContent='로컬 연결 프로그램 확인 중…';
+ try{
+  await bridge.connect();$('connectBtn').textContent='◉ 연결됨';
+  await checkStatus();$('firstInstallHelp').open=false;
+  if(!silent)notice('로컬 Codex 브리지에 연결되었습니다.');
+  return true;
+ }catch(e){
+  if(!silent){$('connectionStatus').textContent='연결 프로그램이 실행 중이지 않습니다. 최초 설치가 필요한 경우 아래 안내를 확인하세요.';$('firstInstallHelp').open=true;}
+  else $('connectionStatus').textContent='연결 전';
+  return false;
+ }
+}
+$('connectBtn').onclick=async()=>{$('connectDialog').showModal();await autoConnect();};
+$('autoConnectBtn').onclick=()=>autoConnect();
+async function checkStatus(){try{if(!bridge.token){const ok=await autoConnect({silent:true});if(!ok){$('connectionStatus').textContent='연결 프로그램을 실행한 뒤 다시 시도하세요.';return;}}const status=await bridge.status();$('connectionStatus').textContent=status.account?`ChatGPT 로그인됨 · 플랜 ${status.account.plan||'미확인'} (실제 이용 가능 여부는 작업 실행으로 검증)`:`Codex 설치 ${status.installed?'확인':'미확인'} · 로그인 필요${status.error?': '+status.error:''}`;}catch(e){$('connectionStatus').textContent=e.message;}}
 $('statusBtn').onclick=checkStatus;
 $('loginBtn').onclick=async()=>{const tab=window.open('about:blank','_blank');try{const r=await bridge.login();if(r.authUrl){if(tab)tab.location.href=r.authUrl;else notice('팝업 차단을 해제하고 다시 시도하세요.');$('connectionStatus').textContent='공식 ChatGPT 로그인 화면에서 인증 후 상태 확인을 누르세요.';}else{tab?.close();await checkStatus();}}catch(e){tab?.close();$('connectionStatus').textContent=e.message;}};
 narrativeUI=initNarrativeUI({getProject:()=>project,getEpisode:()=>selectedEpisodeNumber,persist:flush,afterChange:()=>{renderSeries();renderShots();renderDetail();renderLiveContinuity();},notice});
-try{projects=await listProjects();if(!projects.length){const p=newProject('첫 번째 드라마');projects=[p];await persist(p);}project=projects[0];selected=project.shots[0]?.id||null;resetWriterScope();render();$('saveState').textContent='● 브라우저에 저장됨';}catch(e){notice('IndexedDB 초기화 실패: '+e.message);$('saveState').textContent='저장 기능 오류';}
+try{projects=await listProjects();if(!projects.length){const p=newProject('첫 번째 드라마');p.onboarding={status:'pending'};projects=[p];await persist(p);}project=projects[0];selected=project.shots[0]?.id||null;resetWriterScope();render();$('saveState').textContent='● 브라우저에 저장됨';if(needsOnboarding(project))showEntry();void autoConnect({silent:true});}catch(e){notice('IndexedDB 초기화 실패: '+e.message);$('saveState').textContent='저장 기능 오류';}

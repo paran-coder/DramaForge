@@ -52,3 +52,9 @@ Codex 로그인·작업 실행은 사용자 PC의 로컬 브리지에서 처리�
 
 
 운영 주소: https://dramaforge-lemon-ten.vercel.app/ (배포 완료 후 사용 가능).
+
+## v1.7.0 first-use changes
+When creating a new project, choose AI co-planning or existing planning materials. TXT/MD/JSON files may be added as unapproved reference material; none becomes canon automatically. Visit the new how-to page from the header. If the connector is already running for this site, press AI Connect to connect without entering a pairing code. First-time installation of the local helper requires OS/browser approval.
+
+### 웹에서 새로 제공되는 도움말
+배포 후 상단의 **사용방법**을 누르거나 `/guide.html`로 이동합니다. 새 작품 시작 화면에서는 공동 기획과 기존 기획 자료 가져오기를 선택합니다. 참고 자료는 TXT/MD/JSON만 직접 읽습니다. AI가 참고하는 것은 제한된 분량의 발췌이므로 중요한 부분은 대화에서 지정하세요. 연결 도우미는 코드를 입력하지 않고 자동 연결하지만, 최초 PC 설치·실행 동의는 필요합니다.

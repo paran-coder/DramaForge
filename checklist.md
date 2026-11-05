@@ -34,3 +34,16 @@
 - [ ] 변경 소스 GitHub 반영과 Vercel 재배포
 - [ ] 공개 HTML의 OG/Twitter 태그 및 이미지 HTTP 응답 확인
 - [ ] Vercel Analytics 활성화와 실제 페이지뷰 발생 검증
+
+## v1.7.0 UI + onboarding + bridge integration
+- [x] Two-mode onboarding, with explicit completion and reusable new-project entry
+- [x] Multiple text material import without changing approved canon
+- [x] Interview mode and free conversation guidance
+- [x] How to Use page reachable from UI
+- [x] No-code local bridge connection, exact-origin security checks
+- [x] First-use helper installation limitation explained
+- [x] Bridge distribution updated, no manually typed website origin
+- [x] Existing test suite and added regression tests passed (132/132)
+- [x] Build and archive verified, no production deployment performed
+- [ ] Live browser IndexedDB persistence and actual Codex authentication verified
+- [ ] Vercel preview release confirmed

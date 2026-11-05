@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0e11">
+  <title>DramaForge · AI 드라마 기획과 정설 관리</title>
+  <meta name="description" content="DramaForge는 드라마 대본 기획, 확정 정설 보호, 인물과 사건의 연속성 검증, 스토리보드와 영상 프롬프트 제작을 돕는 브라우저 기반 작업 공간입니다.">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:site_name" content="DramaForge">
+  <meta property="og:title" content="DramaForge | AI 드라마 기획 · 정설 관리 · 연속성 검증">
+  <meta property="og:description" content="AI와 함께 기획하면서도 작가가 확정한 설정은 지키세요. 대본, 세계관, 사건 연표, 연속성 검증을 하나의 작업 공간에서 관리합니다.">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="DramaForge — AI 드라마 기획 · 정설 관리 · 연속성 검증. 다크 테마의 대본 편집 및 연속성 관리 화면.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DramaForge | AI 드라마 기획 · 정설 관리 · 연속성 검증">
+  <meta name="twitter:description" content="대본·정설·연속성 검증을 하나의 작업 공간에서 관리하는 AI 드라마 제작 도구">
+  <meta name="twitter:image" content="/og-image.png">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/theme.css">
+  <!-- 정적 HTML 앱: Vercel 프로젝트에서 Web Analytics를 Enable한 다음 배포하면 통계 수집 시작 -->
+  <script defer src="/analytics-init.js"></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<div class="app"><header class="topbar"><div class="brand"><span class="brand-mark">DF</span><div><strong>DramaForge</strong><span>AI DRAMA PRODUCTION</span></div></div><div class="top-actions"><span id="saveState" class="muted tiny">로컬 저장 준비</span><button id="backupBtn" class="btn ghost">ZIP 백업</button><button id="folderBtn" class="btn ghost">백업 폴더</button><a class="btn ghost" href="/guide.html" aria-label="DramaForge 사용방법 열기">사용방법</a><button id="connectBtn" class="btn primary">◉ AI 연결</button></div></header>
+<div class="layout"><aside class="sidebar"><div class="section-head"><span>작품 보관함</span><button id="newProjectBtn" class="icon-btn" title="작품 추가" aria-label="새 작품">＋</button></div><div id="projectList" class="project-list"></div><div class="sidebar-bottom"><p><b>사용자 작품은 이 브라우저에 저장됩니다. 공용 PC에서는 저장·백업에 주의하세요.</b></p><p>AI 요청 시 제공한 대본과 참조 자산은 로컬 Codex를 통해 OpenAI로 전송됩니다. Vercel은 내용을 저장하지 않습니다.</p><p>Vercel Web Analytics가 켜지면 방문·페이지 조회 통계만 전송됩니다. 대본과 작품 데이터는 분석 이벤트에 포함하지 않습니다.</p><label class="btn ghost block" for="importFile">ZIP 복원</label><input type="file" id="importFile" accept=".zip" hidden></div></aside>
+<main class="workspace"><div class="heading"><div><span class="eyebrow">PROJECT WORKSPACE / v1.7.0</span><h1 id="projectHeading">프로젝트 불러오는 중</h1><p id="subtitle">대본부터 제작 프롬프트까지 하나의 작업 공간에서 관리합니다.</p></div><span class="local-pill">● LOCAL FIRST</span></div><nav class="workspace-tabs" aria-label="작업 공간"><button id="writerTab" class="btn primary" aria-pressed="true">기획 · AI 대화</button><button id="episodeTab" class="btn ghost" aria-pressed="false">회차 · 연속성</button><button id="productionTab" class="btn ghost" aria-pressed="false">영상 제작</button><button id="canonTab" class="btn ghost" aria-pressed="false">정설 · 결정 관리</button><span id="canonSummary" class="tab-summary">정설 확인 중</span></nav>
+<section id="writerWorkspace" class="writer-columns" aria-label="대본과 AI 기획 대화">
+ <div class="writer-main">
+  <div class="entry-banner" id="entryBanner"><div><strong id="entryLabel">작품 시작 방식</strong><p id="importSummary">AI와 새 작품을 기획하거나 기존 기획을 참고 자료로 불러올 수 있습니다.</p></div><button id="startModeBtn" class="btn ghost small" type="button">시작 방식 · 자료 관리</button></div>
+  <section class="panel writer-script-panel"><div class="panel-head"><div><span class="step">01 / WRITING DESK</span><h2>대본 · 작품 기획</h2></div><span class="count" id="writerScriptLength">0자</span></div>
+   <label class="field-label" for="writerScopeSelect">집필 범위</label><select id="writerScopeSelect" class="text-field"><option value="global">작품 전체 · 공통 대본</option></select><label class="field-label" for="writerScriptInput">대본 편집 <span>로컬 자동 저장 · 승인 샷 수정 시 재검토</span></label>
+   <textarea id="writerScriptInput" class="writer-script-editor" placeholder="장면과 대사를 작성하세요. 승인된 설정은 자동 변경되지 않습니다."></textarea>
+   <p class="help-text">AI가 만든 제안은 승인된 정설이 아닙니다. 작가가 별도로 승인해야 합니다.</p>
+  </section>
+  <section class="panel writer-chat-panel"><div class="panel-head"><div><span class="step">02 / PLANNING CONVERSATION</span><h2>작가 · AI 기획 대화</h2></div><span id="reviewStatus" class="count">검토 전</span></div>
+   <div id="planningMessages" class="planning-messages" aria-live="polite"><p class="empty">기획 의견을 기록하거나 AI와 함께 검토해 보세요.</p></div>
+   <label class="field-label" for="planningInput">새 기획 의견 / 질문</label>
+   <textarea id="planningInput" class="planning-composer" placeholder="예: 주인공은 3화까지 범인의 정체를 모른다. 이미 정한 설정과 충돌하는지 확인해 주세요."></textarea>
+   <div class="actions wrap-actions"><button id="recordPlanningBtn" class="btn ghost">대화 기록</button><button id="reviewPlanningBtn" class="btn primary">AI 기획 검토 · 답변</button></div>
+   <p class="help-text">AI 요청 시 대본, 관련 정설, 최근 기획 대화가 로컬 Codex 브리지를 통해 OpenAI에 전송될 수 있습니다.</p>
+  </section>
+ </div>
+ <aside class="writer-aside">
+  <section class="panel writer-continuity-panel"><div class="panel-head"><div><span class="step">LIVE / CONTINUITY</span><h2>회차 자동 점검</h2></div><span id="liveContinuityStatus" class="count">회차 선택</span></div><p class="help-text">입력 중 로컬 규칙으로 즉시 검사합니다. 자연어 탐지는 의심 표시이며, 정밀 의미 검토는 AI 기획 검토에서 수행합니다.</p><div id="liveContinuityList" class="writer-mini-list" aria-live="polite"></div><button id="openEpisodeBtn" class="btn ghost small">회차 관리 열기</button></section>
+  <section class="panel writer-canon-panel"><div class="panel-head"><div><span class="step">03 / CANON LOCK</span><h2>확정 정설</h2></div><button id="writerOpenCanonBtn" class="btn small ghost">결정함 열기</button></div><div id="writerCanonList" class="writer-mini-list"></div></section>
+  <section class="panel writer-local-panel"><div class="panel-head"><div><span class="step">04 / ON-DEVICE REVIEW</span><h2>집필 중 자동 경고</h2></div><span id="localRiskCount" class="count">0건</span></div><p class="help-text">로컬에서 텍스트를 비교하며 외부 AI를 호출하지 않습니다. 정설 변경이나 승인 차단을 자동 실행하지 않습니다.</p><label class="field-label" for="localRiskFilter">경고 필터</label><select id="localRiskFilter" class="text-field"><option value="all">전체 우선순위</option><option value="high">우선 검토만 보기</option></select><div id="localRiskList" class="writer-mini-list" aria-live="polite"></div></section>
+  <section class="panel writer-issues-panel"><div class="panel-head"><div><span class="step">05 / AI REVIEW INBOX</span><h2>AI 중복 · 충돌 검토</h2></div></div><p class="help-text">AI 분석은 명시적으로 요청할 때만 실행합니다. 결정 ID·인용의 출처를 확인하고, 수정안은 작가가 선택합니다.</p><label class="field-label" for="aiIssueFilter">AI 검토 필터</label><select id="aiIssueFilter" class="text-field"><option value="open">미처리 항목 우선</option><option value="all">모든 항목</option><option value="high">우선 검토만</option></select><div id="planningIssueList" class="writer-mini-list" aria-live="polite"></div></section>
+ </aside>
+</section>
+<section id="episodeWorkspace" class="episode-workspace hidden" aria-label="회차 연속성 관리">
+ <div class="governance-intro"><h2>회차별 사건 · 인물/관객 믿음 · 인과관계 · 복선</h2><p>전체 줄거리 설계를 기본으로 하되 회차부터 집필할 수도 있습니다. 후보는 정설이 아니며 작가가 승인한 연속성 기록만 검증 근거로 사용합니다.</p></div>
+ <div class="episode-grid">
+  <section class="panel episode-editor-panel"><div class="panel-head"><div><span class="step">01 / SERIES PLAN</span><h2>전체 줄거리 · 회차 원고</h2></div></div>
+   <label class="field-label" for="workflowSelect">기획 방식</label><select id="workflowSelect" class="text-field"><option value="outline_first">전체 줄거리 → 회차별 집필 (기본)</option><option value="episode_first">회차부터 집필</option></select>
+   <label class="field-label" for="seriesOutline">전체 줄거리 · 작품 아크</label><textarea id="seriesOutline" class="episode-outline" placeholder="전체 사건, 시작과 결말, 주요 인물의 목표와 관계를 계획합니다."></textarea>
+   <label class="field-label" for="episodeSelector">작업 회차</label><select id="episodeSelector" class="text-field"></select>
+   <div class="episode-create"><input id="newEpisodeNumber" type="number" min="1" max="999" class="text-field" placeholder="회차 번호" aria-label="새 회차 번호"><input id="newEpisodeTitle" class="text-field" placeholder="회차 제목" aria-label="새 회차 제목"><button id="addEpisodeBtn" class="btn small ghost">회차 추가</button></div>
+   <label class="field-label" for="episodeTitle">회차 제목</label><input id="episodeTitle" class="text-field" maxlength="150">
+   <label class="field-label" for="episodeSummary">회차 개요</label><textarea id="episodeSummary" class="episode-summary"></textarea>
+   <label class="field-label" for="episodeScript">회차 대본</label><textarea id="episodeScript" class="episode-script" placeholder="회차별 장면을 작성하세요. 변경하면 해당 회차에 연결된 샷의 승인을 무효화합니다."></textarea>
+   <p id="episodeSaveStatus" class="help-text">회차를 추가한 뒤 입력할 수 있습니다.</p>
+  </section>
+  <section class="panel episode-record-panel"><div class="panel-head"><div><span class="step">02 / APPROVAL LEDGER</span><h2>연속성 기록 · 작가 승인</h2></div></div>
+   <label class="field-label" for="seriesRecordType">기록 유형</label><select id="seriesRecordType" class="text-field"><option value="event">사건 연표</option><option value="knowledge">인물 지식</option><option value="foreshadowing">복선 설치·회수</option></select>
+   <div id="eventRecordForm" class="record-form"><input id="eventTitle" class="text-field" placeholder="사건 제목"><div class="input-pair"><input id="eventEpisode" type="number" class="text-field" min="1" max="999" placeholder="발생 회차"><input id="eventOrder" type="number" class="text-field" min="1" max="1000" value="1" placeholder="회차 내 순서"></div><textarea id="eventDescription" placeholder="사건 내용"></textarea></div>
+   <div id="knowledgeRecordForm" class="record-form hidden"><input id="knowledgeCharacter" class="text-field" placeholder="인물 ID/이름"><input id="knowledgeFact" class="text-field" placeholder="알게 된 사실"><div class="input-pair"><input id="knowledgeEpisode" class="text-field" type="number" min="1" max="999" placeholder="지식 획득 회차"><input id="knowledgeReveal" class="text-field" type="number" min="1" max="999" placeholder="관객 공개 회차 (선택)"></div><select id="knowledgeKind" class="text-field"><option value="truth">사실로 알고 있음</option><option value="belief">인물의 믿음</option></select></div>
+   <div id="clueRecordForm" class="record-form hidden"><input id="clueText" class="text-field" placeholder="복선 단서"><div class="input-pair"><input id="cluePlanted" class="text-field" type="number" min="1" max="999" placeholder="설치 회차"><input id="cluePayoff" class="text-field" type="number" min="1" max="999" placeholder="회수 회차 (선택)"></div></div>
+   <button id="addSeriesRecordBtn" class="btn primary wide">연속성 후보 등록 (정설 아님)</button>
+   <p class="help-text">승인된 기록은 직접 수정할 수 없습니다. 변경 요청 → 작가 승인 절차를 거칩니다.</p>
+   <div id="seriesRecordList" class="decision-list"></div><h3 class="panel-subtitle">변경 요청</h3><div id="seriesChangeList" class="decision-list"></div>
+  </section>
+  <section class="panel episode-inspector-panel"><div class="panel-head"><div><span class="step">03 / EPISODE INSPECTOR</span><h2>회차별 연속성 검사</h2></div></div>
+   <div id="episodeInspectionStatus" class="guard-report" aria-live="polite">회차를 추가하면 자동 점검합니다.</div>
+   <div id="episodeIssueList" class="writer-mini-list"></div>
+   <h3 class="panel-subtitle">현재 시점의 인물 지식</h3><div id="knowledgeStateList" class="writer-mini-list"></div>
+   <h3 class="panel-subtitle">이전 사건 및 복선</h3><div id="episodeHistoryList" class="writer-mini-list"></div>
+  </section>
+ </div>
+ <section class="narrative-grid" aria-label="서사 기억 · 인과관계 · 시간축">
+  <section class="panel narrative-editor-panel" aria-labelledby="narrativeHeading">
+   <div class="panel-head"><div><span class="step">04 / NARRATIVE MEMORY</span><h2 id="narrativeHeading">사건 인과 · 믿음 · 공개 시간</h2></div></div>
+   <p class="help-text">기존 정설은 변경하지 않습니다. 새 관계는 후보로 저장되며 작가 승인 전에는 검증 기준에 포함되지 않습니다.</p>
+   <label class="field-label" for="narrativeType">추가할 서사 기록</label>
+   <select id="narrativeType" class="text-field">
+    <option value="causality">원인 → 결과 · 선행 조건</option><option value="perspective">실제 진실 · 인물/관객 믿음</option><option value="timeline">극중 · 공개 · 승인 시간축</option>
+   </select>
+   <div id="causalityForm" class="record-form">
+    <label class="field-label" for="causeEvent">원인 사건 (승인된 사건)</label><select id="causeEvent" class="text-field"></select>
+    <label class="field-label" for="effectEvent">결과 사건 (승인된 사건)</label><select id="effectEvent" class="text-field"></select>
+    <label class="field-label" for="causalPrerequisite">선행 조건</label><textarea id="causalPrerequisite" placeholder="결과가 발생하기 위해 꼭 필요한 조건"></textarea>
+    <label class="field-label" for="causalReason">원인과 결과의 연결 근거</label><textarea id="causalReason" placeholder="왜 이 사건이 저 사건을 일으키는가"></textarea>
+    <label class="field-label" for="causalException">예외·회상·역순 공개 (선택)</label><input id="causalException" class="text-field" placeholder="예: 원인 공개는 6화의 회상으로 처리">
+   </div>
+   <div id="perspectiveForm" class="record-form hidden">
+    <label class="field-label" for="worldTruth">세계관의 실제 진실</label><textarea id="worldTruth" placeholder="실제로 일어난 사실"></textarea>
+    <label class="field-label" for="perspectiveCharacter">인물 (선택)</label><input id="perspectiveCharacter" class="text-field" placeholder="예: 서윤">
+    <label class="field-label" for="characterBelief">인물이 믿는 내용 (선택)</label><textarea id="characterBelief" placeholder="진실과 다를 수 있는 인물의 믿음"></textarea>
+    <label class="field-label" for="characterBeliefEpisode">인물 믿음 시작 회차</label><input id="characterBeliefEpisode" type="number" min="1" max="999" class="text-field" placeholder="선택한 인물에 한함">
+    <label class="field-label" for="audienceBelief">시청자에게 믿게 할 내용 (선택)</label><textarea id="audienceBelief" placeholder="시청자가 임시로 믿는 정보"></textarea>
+    <div class="input-pair">
+     <div><label class="field-label" for="audienceMisleadEpisode">오해 유도 회차</label><input id="audienceMisleadEpisode" type="number" min="1" max="999" class="text-field"></div>
+     <div><label class="field-label" for="truthRevealEpisode">실제 진실 공개 회차</label><input id="truthRevealEpisode" type="number" min="1" max="999" class="text-field"></div>
+    </div>
+    <label class="narrative-check"><input id="intentionalMisdirection" type="checkbox">의도적으로 관객을 오도하는 반전·복선입니다</label>
+    <label class="field-label" for="directorIntent">작가의 연출 의도 (의도적 오해 시 필수)</label><textarea id="directorIntent" placeholder="예: 6화에서 사건의 다른 측면을 보여주는 반전"></textarea>
+   </div>
+   <div id="timelineForm" class="record-form hidden">
+    <label class="field-label" for="timelineEvent">시간축에 연결할 승인 사건</label><select id="timelineEvent" class="text-field"></select>
+    <label class="field-label" for="worldOrder">극중 실제 발생 순서</label><input id="worldOrder" type="number" min="1" max="100000" class="text-field" placeholder="숫자가 작을수록 먼저 발생">
+    <label class="field-label" for="worldTime">극중 실제 시점 (자유 형식)</label><input id="worldTime" class="text-field" placeholder="예: 2021년 겨울, 사건 3일 전">
+    <label class="field-label" for="audienceEventEpisode">시청자 공개 회차</label><input id="audienceEventEpisode" type="number" min="1" max="999" class="text-field">
+    <label class="field-label" for="audienceEventScene">공개 장면 (선택)</label><input id="audienceEventScene" class="text-field" placeholder="예: SC12 회상 장면">
+   </div>
+   <label class="field-label" for="narrativeSourceQuote">사건·대본 출처 인용 (선택)</label><textarea id="narrativeSourceQuote" class="narrative-reason" placeholder="근거가 되는 원문을 보존합니다."></textarea>
+   <button id="addNarrativeBtn" class="btn primary wide">서사 기록 후보 등록 (정설 아님)</button>
+   <p class="help-text">승인된 기록 변경은 변경 요청으로만 가능합니다. 관계가 순환하거나 극중 시간 순서와 충돌하면 승인을 차단합니다.</p>
+   <h3 class="panel-subtitle">후보 · 승인 기록</h3><div id="narrativeRecordList" class="decision-list"></div>
+   <h3 class="panel-subtitle">변경 요청</h3><div id="narrativeChangeList" class="decision-list"></div>
+  </section>
+  <section class="panel narrative-inspector-panel" aria-labelledby="narrativeInspectorHeading">
+   <div class="panel-head"><div><span class="step">05 / TIME & PERSPECTIVE</span><h2 id="narrativeInspectorHeading">시점별 인물 · 시청자 상태</h2></div></div>
+   <p id="narrativeReviewStatus" class="help-text" aria-live="polite">회차를 선택하면 인과관계와 세 가지 시간을 비교합니다.</p>
+   <div id="narrativeStateList" class="writer-mini-list"></div>
+   <h3 class="panel-subtitle">작가 검토가 필요한 중요 경고</h3>
+   <div id="narrativeCriticalList" class="writer-mini-list" aria-live="polite"></div>
+   <label class="field-label" for="narrativeReviewReason">검토 근거 (중요 경고가 있을 때)</label>
+   <textarea id="narrativeReviewReason" class="narrative-reason" placeholder="기존 정설에 모순되지 않는 이유, 회상·복선의 근거 등을 남기세요."></textarea>
+   <button id="narrativeReviewBtn" class="btn ghost">중요 경고 작가 검토 기록</button>
+   <details class="narrative-batch"><summary>경미한 알림 · 일괄 확인 <span id="narrativeBatchCount">0</span>건</summary><div id="narrativeBatchList" class="writer-mini-list"></div></details>
+   <h3 class="panel-subtitle">세 가지 시간축</h3>
+   <p class="help-text">극중 시점 / 시청자 공개 회차 / 작가의 최종 승인 시각을 별도로 표시합니다.</p>
+   <div id="narrativeTimeList" class="writer-mini-list"></div>
+  </section>
+ </section>
+</section>
+
+<div id="productionWorkspace" class="columns hidden">
+<section class="panel input-panel"><div class="panel-head"><div><span class="step">01 / INPUT</span><h2>대본 · 제작 기준</h2></div></div><label class="field-label" for="titleInput">작품명</label><input id="titleInput" class="text-field" placeholder="작품 제목" maxlength="100"><label class="field-label" for="scriptInput">대본 <span>장면/씬 단위 권장</span></label><textarea id="scriptInput" class="big-editor" placeholder="SCENE 1. 낡은 방, 밤&#10;&#10;서윤은 편지를 꺼내 들고 문 쪽을 바라본다.&#10;서윤: 누가 거기 있어요?"></textarea><div class="field-note" id="scriptLength">0자</div><label class="field-label" for="bibleInput">비주얼 바이블 (직접 편집)</label><textarea id="bibleInput" class="bible-editor" placeholder="캐릭터 외모, 의상, 장소, 소품의 승인된 기준을 입력하세요."></textarea><label class="field-label" for="referenceFile">캐릭터 참조 이미지</label><input type="file" id="referenceFile" accept="image/png,image/jpeg,image/webp"><div id="referencePreview" class="reference-preview"></div><p id="shotGenerationScope" class="help-text">샷 생성 대상: 작품 전체 대본</p><div class="actions vertical"><button id="generateBtn" class="btn primary wide">AI로 샷 생성</button><button id="previewBtn" class="btn ghost wide">로컬 규칙으로 초안 생성 (AI 아님)</button></div><p class="help-text">원본 대본이나 비주얼 바이블을 수정하면 기존 승인은 검토 필요 상태로 전환됩니다.</p></section>
+<section class="panel shots-panel"><div class="panel-head"><div><span class="step">02 / SHOT BOARD</span><h2>샷 리스트 <span class="count" id="shotCount">0</span></h2></div><button id="addShotBtn" class="btn small ghost">+ 수동 추가</button></div><div id="shotList" class="shot-list"><p class="empty">대본을 분석하면 샷 카드가 나타납니다.</p></div><div class="panel-foot"><span id="approvalSummary">승인 0개</span><span id="revisionCount">Revision 0</span></div></section>
+<section class="panel detail-panel"><div class="panel-head"><div><span class="step">03 / DIRECTOR DESK</span><h2>샷 상세 · Seedance</h2></div><span id="shotState" class="state-chip">대기</span></div><div id="detailEmpty" class="empty-detail"><div class="empty-icon">◫</div><h3>샷을 선택하세요</h3><p>카메라, 연기, 대사, 스토리보드와 Seedance 프롬프트를 확인할 수 있습니다.</p></div><div id="detailForm" class="hidden"><div id="storyboardBox" class="storyboard-box"><div class="storyboard-placeholder">STORYBOARD<br><small>16 : 9</small></div></div><div class="detail-ops"><button id="imageGenBtn" class="btn small ghost">AI 스토리보드 생성</button><label class="btn small ghost" for="storyboardFile">이미지 등록</label><input type="file" id="storyboardFile" accept="image/png,image/jpeg,image/webp" hidden></div><label class="field-label" for="shotEpisodeSelect">샷 연결 회차</label><select id="shotEpisodeSelect" class="text-field"><option value="">회차 미연결</option></select><div id="editFields"></div><div class="detail-ops"><button id="addShotDependencyBtn" class="btn small ghost">선행 샷 의존성 연결</button></div><label class="field-label" for="seedancePrompt">Seedance 2.5 프롬프트</label><textarea id="seedancePrompt" class="prompt-editor" placeholder="샷 정보를 바탕으로 프롬프트를 생성하세요."></textarea><div class="detail-ops"><button id="promptBtn" class="btn small ghost">프롬프트 구성</button><button id="copyBtn" class="btn small ghost">복사</button></div><label class="field-label" for="videoFile">완성 영상 연결 (원본은 PC에 유지)</label><input id="videoFile" type="file" accept="video/mp4,video/webm"><div id="videoInfo" class="field-note"></div><details class="guard-section" open><summary>정설 검증 · Character / Decision / Timeline Guard</summary>
+<div id="shotGuardReport" class="guard-report" aria-live="polite">샷을 선택하면 근거를 검사합니다.</div>
+<div class="guard-inputs">
+  <select id="claimKind" class="text-field" aria-label="검증 사실 유형"><option value="character">인물 상태</option><option value="knowledge">인물이 아는 사실</option><option value="timeline">사건 연표</option></select>
+  <input id="claimSubject" class="text-field" placeholder="주체 ID: CHAR01 / EVENT01">
+  <input id="claimAttribute" class="text-field" placeholder="속성: 직업 / 범인정체 / 발생">
+  <input id="claimValue" class="text-field" placeholder="값: 기자 / 모름 / 발생함">
+  <input id="claimEpisode" type="number" min="1" max="999" value="1" class="text-field" aria-label="회차">
+  <button id="addClaimBtn" class="btn small ghost">샷 검증 사실 추가</button>
+</div>
+<div id="guardClaimsList" class="guard-claims"></div>
+<p class="help-text">구조화된 사실만 자동 대조합니다. 판단할 근거가 부족하면 작가가 검토 사유를 남겨야 합니다.</p></details>
+<button id="approveBtn" class="btn primary wide">검증 후 샷 승인</button></div></section>
+</div>
+<section id="governanceWorkspace" class="governance-workspace hidden" aria-label="정설 및 결정 관리">
+  <div class="governance-intro"><h2>작품 정설 · 결정 관리</h2><p>AI가 제안한 내용은 <b>후보</b>입니다. 본편 정설은 작가가 승인한 내용만 적용합니다. 실험 분기는 본편과 분리됩니다.</p></div>
+  <div class="governance-grid">
+    <section class="panel governance-panel"><div class="panel-head"><div><span class="step">01 / DECISION INBOX</span><h2>새 결정 후보</h2></div></div>
+      <label class="field-label" for="decisionType">분류</label><select id="decisionType" class="text-field"><option value="fact">사건·설정</option><option value="character">인물</option><option value="timeline">연표·지식</option><option value="charter">작품 기획 헌장</option><option value="constraint">금지·제약</option></select>
+      <label class="field-label" for="decisionTitle">제목</label><input id="decisionTitle" class="text-field" maxlength="120" placeholder="예: 주인공의 비밀">
+      <label class="field-label" for="decisionStatement">정설 후보 내용</label><textarea id="decisionStatement" class="governance-textarea" placeholder="주인공은 8화 전까지 아버지 사망의 진실을 모른다."></textarea>
+      <label class="field-label" for="decisionRationale">결정 배경·근거</label><textarea id="decisionRationale" class="governance-textarea short" placeholder="이 설정을 채택한 이유"></textarea>
+      <button id="candidateBtn" class="btn primary wide">후보 등록 (정설 아님)</button><button id="extractDecisionBtn" class="btn ghost wide">Codex로 대본에서 결정 후보 추출</button>
+      <p class="help-text">AI 추출 내용은 자동 승인되지 않습니다. 기획 대화의 의미 기반 중복 의심은 작가가 검토하고, 확정된 정설은 변경 요청을 통해서만 수정합니다.</p>
+    </section>
+    <section class="panel governance-panel"><div class="panel-head"><div><span class="step">02 / AUTHOR REVIEW</span><h2>결정함 · 기각 이력</h2></div></div><div id="decisionList" class="decision-list" aria-live="polite"></div></section>
+    <section class="panel governance-panel"><div class="panel-head"><div><span class="step">03 / CONTROLLED CHANGES</span><h2>변경 요청 · 영향 관리</h2></div></div><p class="help-text">승인된 정설의 문구는 바로 편집할 수 없습니다. 변경 요청을 별도로 작성하고 작가가 승인합니다. 연결되지 않은 장면의 영향은 자동 확인되지 않습니다.</p><div id="changeList" class="decision-list"></div></section>
+  </div>
+  <section class="panel branch-panel guard-rule-panel"><div class="panel-head"><div><span class="step">04 / EVIDENCE RULES</span><h2>승인 정설의 검증 기준 등록</h2></div></div>
+    <p class="help-text">승인된 정설 하나를 선택해 회차별 인물 상태·지식·사건 정보를 구조화합니다. 자유 서술 대본을 읽어 자동 확정하지 않습니다.</p>
+    <div class="guard-inputs">
+      <select id="guardDecision" class="text-field" aria-label="근거 정설"><option value="">승인 정설 선택</option></select>
+      <select id="guardKind" class="text-field" aria-label="검증 기준 유형"><option value="character">인물 상태</option><option value="knowledge">지식 상태</option><option value="timeline">사건 연표</option></select>
+      <input id="guardSubject" class="text-field" placeholder="주체 ID (예: CHAR01)">
+      <input id="guardAttribute" class="text-field" placeholder="속성 (예: 직업)">
+      <input id="guardValue" class="text-field" placeholder="승인된 값 (예: 기자)">
+      <input id="guardStart" class="text-field" type="number" min="1" max="999" value="1" aria-label="시작 회차">
+      <input id="guardEnd" class="text-field" type="number" min="1" max="999" value="999" aria-label="종료 회차">
+      <button id="addGuardRuleBtn" class="btn primary">검증 기준 등록</button>
+    </div><div id="guardRulesList" class="decision-list"></div>
+  </section>
+  <section class="panel branch-panel"><div class="panel-head"><div><span class="step">04 / WHAT-IF SANDBOX</span><h2>실험 분기 · 본편에서 격리</h2></div></div>
+    <div class="branch-controls"><input id="branchName" class="text-field" maxlength="100" placeholder="분기명: 아버지가 살아 있다면"><input id="branchPremise" class="text-field" maxlength="300" placeholder="실험 가정 (본편에 적용되지 않음)"><button id="createBranchBtn" class="btn ghost">분기 생성</button></div>
+    <label class="field-label" for="branchSelect">작업할 실험 분기</label><select id="branchSelect" class="text-field"><option value="">실험 분기 없음</option></select>
+    <div class="branch-controls"><input id="branchIdeaTitle" class="text-field" placeholder="실험 아이디어 제목"><input id="branchIdeaStatement" class="text-field" placeholder="아이디어 내용"><button id="addBranchIdeaBtn" class="btn ghost">실험안 추가</button></div>
+    <div id="branchIdeaList" class="decision-list"></div>
+    <p class="help-text">실험안을 본편으로 가져와도 승인 대기 후보만 생성됩니다. 원래 정설·샷은 변경되지 않습니다.</p>
+  </section>
+</section></main></div></div>
+<dialog id="startDialog" class="start-dialog" aria-labelledby="startDialogTitle">
+  <div class="dialog-head"><h2 id="startDialogTitle">작품을 어떻게 시작하시겠습니까?</h2><button class="icon-btn" id="closeStartDialogBtn" type="button" aria-label="닫기">×</button></div>
+  <p>두 방식 모두 같은 프로젝트에서 이어집니다. AI 제안이나 가져온 문서는 작가가 승인하기 전에는 정설이 아닙니다.</p>
+  <div class="entry-options">
+    <button id="coCreateBtn" class="entry-choice" type="button"><strong>AI와 새 작품 기획</strong><span>소재 한 줄부터 시작합니다. 질문을 주고받으며 전체 줄거리와 인물을 구체화합니다.</span></button>
+    <button id="importModeBtn" class="entry-choice" type="button"><strong>기존 기획 가져오기</strong><span>기획서·캐릭터 설정·줄거리·대본을 여러 개 불러와 검토합니다.</span></button>
+  </div>
+  <label class="field-label" for="conversationMode">공동 기획 대화 방식</label>
+  <select id="conversationMode" class="text-field"><option value="interview">인터뷰형 — AI가 결정하지 않은 내용을 차례로 질문</option><option value="free">자유 대화형 — 작가가 방향을 정해 질문</option></select>
+  <div class="import-entry"><label class="field-label" for="planningFiles">기획 자료 추가 (TXT, MD, JSON · 여러 파일 선택)</label>
+    <input id="planningFiles" type="file" accept=".txt,.md,.json,text/plain,text/markdown,application/json" multiple>
+    <div id="importedDocumentList" class="imported-document-list" aria-label="가져온 참고 문서"></div><p id="materialStatus" class="help-text">여기에 등록한 자료는 승인되지 않은 참고 문서입니다. 기존 정설을 변경하지 않습니다. PDF·DOCX는 현재 직접 읽지 않으며 텍스트로 변환해 가져오세요.</p>
+  </div>
+</dialog>
+<dialog id="connectDialog" aria-labelledby="connectDialogTitle"><form method="dialog" class="dialog-head"><h2 id="connectDialogTitle">ChatGPT Codex 연결</h2><button class="icon-btn" aria-label="닫기">×</button></form>
+ <p>이미 실행 중인 로컬 연결 프로그램을 자동 감지합니다. 연결코드를 입력할 필요가 없습니다.</p>
+ <p id="connectionStatus" class="field-note" role="status" aria-live="polite">연결 상태 확인 전</p>
+ <div class="dialog-actions"><button id="autoConnectBtn" class="btn primary" type="button">자동 연결</button><button id="loginBtn" class="btn ghost" type="button">ChatGPT 로그인</button><button id="statusBtn" class="btn ghost" type="button">상태 확인</button></div>
+ <details id="firstInstallHelp" class="install-help"><summary>처음 연결하는 경우 · 설치 안내</summary>
+ <p>브라우저는 로컬 프로그램을 사용자 동의 없이 설치하거나 실행할 수 없습니다. 최초 1회에 한해 설치 및 실행이 필요하며 이후에는 연결코드 없이 접속할 수 있습니다.</p>
+ <ol class="connector-steps"><li><a href="/downloads/DramaForge-Connector-v1.7.0.zip" download>연결 도우미 다운로드</a> 후 압축을 해제합니다.</li><li>PC에 Node.js 20 이상과 Codex CLI가 설치되어 있어야 합니다.</li><li>Windows는 <code>run-windows.cmd</code>, macOS/Linux는 <code>run-unix.sh</code>를 실행합니다. 공식 DramaForge 웹 주소는 미리 설정되어 있습니다.</li><li>브라우저로 돌아와 <b>자동 연결</b>을 누르고, 필요하면 ChatGPT에 로그인합니다.</li></ol>
+ <p>별도의 연결코드나 웹 주소 수동 입력은 필요하지 않습니다. <a href="/guide.html#ai-connection">설치 안내 자세히 보기</a></p>
+ </details>
+</dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div><script type="module" src="/main.mjs"></script></body></html>

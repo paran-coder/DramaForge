@@ -9,8 +9,11 @@ export async function createBridge({port=7331,origins=['http://127.0.0.1:4173','
   if(![`127.0.0.1:${actualPort}`,`localhost:${actualPort}`].includes(req.headers.host))return reply(res,403,{error:'Host 오류'});const route=new URL(req.url,'http://localhost').pathname;if(!route.startsWith('/api/'))return reply(res,404,{error:'지원하지 않는 경로'});
   if(!allow.has(req.headers.origin))return reply(res,403,{error:'이 웹 주소는 허용되지 않았습니다. --origin 값을 확인하세요.'});res.setHeader('Access-Control-Allow-Origin',req.headers.origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Allow-Headers','Content-Type, Authorization');res.setHeader('Access-Control-Allow-Methods','POST, OPTIONS');res.setHeader('Access-Control-Allow-Private-Network','true');
   if(req.method==='OPTIONS'){res.writeHead(204);return res.end();}if(req.method!=='POST')return reply(res,405,{error:'POST만 허용합니다.'});
-  if(route!=='/api/pair'&&!verifyToken(req.headers.authorization,token))return reply(res,401,{error:'브리지 연결 코드로 먼저 인증하세요.'});const data=await parse(req);
-  if(route==='/api/pair'){if(Date.now()<blockedUntil)return reply(res,429,{error:'1분간 페어링이 잠겼습니다.'});if(!verifyToken(`Bearer ${data.code}`,pairCode)){if(++failures>=8){failures=0;blockedUntil=Date.now()+60000;}return reply(res,401,{error:'연결 코드가 일치하지 않습니다.'});}failures=0;return reply(res,200,{token,version:'1.5.0'});}
+  if(!['/api/pair','/api/connect'].includes(route)&&!verifyToken(req.headers.authorization,token))return reply(res,401,{error:'브리지 연결 코드로 먼저 인증하세요.'});const data=await parse(req);
+  // The owner explicitly starts the loopback helper with a trusted --origin.
+  // Only that exact Origin may receive the short-lived in-memory session token.
+  if(route==='/api/connect')return reply(res,200,{token,version:'1.7.0',authorization:'origin-allowlist'});
+  if(route==='/api/pair'){if(Date.now()<blockedUntil)return reply(res,429,{error:'1분간 페어링이 잠겼습니다.'});if(!verifyToken(`Bearer ${data.code}`,pairCode)){if(++failures>=8){failures=0;blockedUntil=Date.now()+60000;}return reply(res,401,{error:'연결 코드가 일치하지 않습니다.'});}failures=0;return reply(res,200,{token,version:'1.7.0'});}
   if(route==='/api/status')return reply(res,200,await provider.status());
   if(route==='/api/login')return reply(res,200,await provider.login());
   if(route==='/api/jobs'){if(active)return reply(res,409,{error:'다른 AI 작업이 이미 실행 중입니다.'});const jobInput=validateRequest(data);const id=randomUUID(),ctrl=new AbortController(),job={id,state:'running',message:'Codex 요청 처리 중',createdAt:Date.now()};jobs.set(id,job);active={id,ctrl};while(jobs.size>20)jobs.delete(jobs.keys().next().value);void provider.createJob(jobInput,{signal:ctrl.signal}).then(result=>{if(!ctrl.signal.aborted)Object.assign(job,{state:'completed',result,message:'완료'});}).catch(e=>{Object.assign(job,{state:ctrl.signal.aborted?'cancelled':'failed',message:e.message});}).finally(()=>{if(active?.id===id)active=null;});return reply(res,202,{id});}
@@ -23,6 +26,6 @@ export async function createBridge({port=7331,origins=['http://127.0.0.1:4173','
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const i=process.argv.indexOf('--origin'),origins=i>=0?[new URL(process.argv[i+1]).origin]:undefined;if(origins&&!origins[0].startsWith('https://')&&!origins[0].startsWith('http://localhost')&&!origins[0].startsWith('http://127.0.0.1'))throw new Error('배포 주소는 HTTPS여야 합니다.');
- const bridge=await createBridge({origins});console.log(`DramaForge Bridge v1.5.0\n주소: http://127.0.0.1:${bridge.port}\n연결 코드: ${bridge.pairCode}\n허용 웹 주소: ${(origins||['http://127.0.0.1:4173','http://localhost:4173']).join(', ')}\n종료: Ctrl+C`);
+ const bridge=await createBridge({origins});console.log(`DramaForge Bridge v1.7.0\n주소: http://127.0.0.1:${bridge.port}\n브라우저 연결: 허용된 출처에서 코드 없이 승인\n허용 웹 주소: ${(origins||['http://127.0.0.1:4173','http://localhost:4173']).join(', ')}\n종료: Ctrl+C`);
  for(const s of ['SIGINT','SIGTERM'])process.once(s,()=>void bridge.close().then(()=>process.exit(0)));
 }

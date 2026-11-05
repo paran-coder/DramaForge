@@ -39,3 +39,10 @@
 - Production 빌드에만 확정 도메인을 기본 적용하고 Preview는 독립 주소 유지.
 - API 권한으로 배포 READY 확인, 실제 HTML 조회는 Vercel 연결 권한 거부로 미검증.
 - 정설·시나리오·브리지 기능은 수정하지 않음.
+
+## v1.7.0 approved scope (2026-11-05)
+- Author-approved two entry paths: co-create a new project via interview/free dialogue, or import multiple existing planning documents.
+- Add a first-party How to Use page.
+- Replace typed local bridge pairing code with origin-approved automatic connection. Preserve exact Origin, loopback binding, host validation and bearer auth for all AI actions.
+- Browser cannot silently install native executables. Preserve user consent for first-time local helper installation; do not claim fully automatic native install.
+- Existing canon/approved decisions are immutable without author approval. Keep all existing local-first storage/backup functionality.

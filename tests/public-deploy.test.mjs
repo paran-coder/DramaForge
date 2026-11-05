@@ -32,7 +32,7 @@ test('public web origin is allowlisted; random sites cannot pair or issue shell 
  assert.equal((await send('/api/pair',{code:'fedcba9876543210'},'https://attacker.example')).status,403);
  const ok=await send('/api/pair',{code:'fedcba9876543210'},ORIGIN);
  assert.equal(ok.status,200);assert.equal(ok.headers.get('Access-Control-Allow-Origin'),ORIGIN);
- assert.equal(ok.body.version,'1.5.0');
+ assert.equal(ok.body.version,'1.7.0');
  assert.equal((await send('/api/jobs',{mode:'shots',prompt:'scene'},'https://attacker.example',ok.body.token)).status,403);
  assert.equal((await send('/api/jobs',{mode:'terminal',prompt:'rm -rf /'},ORIGIN,ok.body.token)).status,400);
  assert.equal((await send('/api/status',{},ORIGIN,ok.body.token)).status,200);

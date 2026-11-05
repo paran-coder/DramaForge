@@ -66,3 +66,11 @@ npm run dev
 - 배포 후 Vercel Web Analytics 대시보드에서 활성화·실제 방문 수집 확인 필요
 - 기존 대본·정설·로컬 저장·Codex 브리지 로직 변경 없음
 - 상세 절차: `docs/OG_ANALYTICS.md`
+
+## v1.7.0 implementation scope
+Two onboarding paths, local multi-file planning import, independent how-to page, and code-free connection to an already installed and running local helper. Browsers cannot silently install local executables: the first installation still requires explicit user action. Production deployment remains a separate step.
+
+### v1.7.0 빠른 시작
+`npm run check && npm run build`로 확인합니다. `npm run dev`로 로컬 정적 웹을 실행합니다. 작품을 처음 열면 **AI와 새 작품 기획** 또는 **기존 기획 가져오기**를 고릅니다. 상세 도움말은 `/guide.html`입니다. AI 연결은 코드 입력 없이 기존 로컬 도우미를 감지하지만, 첫 사용자는 운영체제의 권한 승인하에 도우미를 실행해야 합니다. 무인 자동 설치 기능은 포함되지 않습니다.
+
+[배포 및 보안 상세](docs/RELEASE_v1.7.0.md) · [검증 보고서](docs/TEST_REPORT_v1.7.0.md)

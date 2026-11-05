@@ -1,0 +1,1 @@
+{"name":"dramaforge-connector","version":"1.7.0","private":true,"type":"module","scripts":{"bridge":"node bridge/server.mjs --origin https://dramaforge-lemon-ten.vercel.app"},"engines":{"node":">=20"}}

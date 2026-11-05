@@ -295,3 +295,45 @@ dialog code {color: var(--color-primary);}
 .narrative-batch:focus-within { outline:2px solid var(--color-focus);outline-offset:2px; }
 .narrative-batch .writer-mini-list { margin-top:var(--space-3); }
 @media(max-width:960px){.narrative-grid{grid-template-columns:1fr;}.narrative-grid .panel{min-height:0;}}
+/* v1.7.0 — Project intake and documentation. Existing editor components preserved. */
+.entry-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg)}
+.entry-banner strong{font-size:var(--font-size-body);font-weight:650;color:var(--color-heading)}
+.entry-banner p{font-size:var(--font-size-body-sm);line-height:1.5;color:var(--color-muted);margin:4px 0 0}
+.start-dialog{max-width:680px;max-height:calc(100vh - 48px);overflow:auto}
+.entry-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.entry-choice{border:1px solid var(--color-border-strong);border-radius:var(--radius-lg);background:var(--color-editor);padding:18px;text-align:left;display:flex;flex-direction:column;gap:8px;color:var(--color-text);min-height:130px}
+.entry-choice strong{font-size:16px;line-height:1.4;color:var(--color-heading)}
+.entry-choice span{font-size:14px;line-height:1.55;color:var(--color-muted)}
+.entry-choice:hover,.entry-choice:focus-visible{border-color:var(--color-primary);outline-offset:3px}
+.entry-choice:focus-visible{outline:2px solid var(--color-focus)}
+.import-entry{margin-top:14px;padding-top:12px;border-top:1px solid var(--color-border)}
+.install-help{margin-top:18px;border:1px solid var(--color-border);border-radius:8px;padding:12px;background:var(--color-editor)}
+.install-help summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--color-heading)}
+.install-help a{color:var(--color-primary);text-underline-offset:3px}
+.install-help:focus-within{outline:2px solid var(--color-focus);outline-offset:2px}
+.guide-page{background:var(--color-canvas);color:var(--color-text);line-height:1.7}
+.guide-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px;padding:14px clamp(18px,4vw,44px);border-bottom:1px solid var(--color-border);background:var(--color-canvas)}
+.guide-brand{text-decoration:none;color:var(--color-heading);display:flex;gap:12px;align-items:center;font-size:20px;font-weight:700}
+.guide-main{max-width:1080px;margin:auto;padding:36px clamp(18px,4vw,46px) 60px}
+.guide-hero{max-width:760px;padding:35px 0 28px}
+.guide-hero h1{color:var(--color-heading);font-size:clamp(29px,4vw,43px);letter-spacing:-.7px;line-height:1.25;margin:15px 0 20px}
+.guide-hero p:not(.eyebrow){color:var(--color-muted);font-size:16px;line-height:1.7}
+.guide-index{display:flex;gap:9px;flex-wrap:wrap;border-bottom:1px solid var(--color-border);padding:0 0 24px}
+.guide-index a{color:var(--color-text);background:var(--color-surface);border:1px solid var(--color-border);padding:7px 12px;border-radius:6px;text-decoration:none;font-size:14px}
+.guide-index a:hover,.guide-index a:focus-visible{border-color:var(--color-primary)}
+.guide-section{padding:34px 0;border-bottom:1px solid var(--color-border);max-width:850px;scroll-margin-top:30px}
+.guide-step{color:var(--color-primary);font-size:12px;font-weight:700;letter-spacing:.9px}
+.guide-section h2{color:var(--color-heading);font-size:24px;line-height:1.35;margin:12px 0 16px}
+.guide-section p,.guide-section li{font-size:15px;color:var(--color-text);line-height:1.8}
+.guide-section li{padding:3px 0}
+.guide-section a{color:var(--color-primary)}
+.guide-section code{color:var(--color-primary);overflow-wrap:anywhere}
+.guide-note{background:var(--color-surface);padding:14px 16px;border-radius:8px;border-left:3px solid var(--color-primary)}
+.guide-footer{padding-top:36px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.guide-footer p{color:var(--color-muted);font-size:12px}
+@media(max-width:640px){.entry-options{grid-template-columns:1fr}.entry-banner{flex-direction:column;align-items:stretch}.guide-footer{flex-direction:column;align-items:flex-start}.guide-topbar{flex-wrap:wrap}.guide-section h2{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.entry-choice{transition:none}}
+
+.imported-document-list{display:flex;flex-direction:column;gap:8px;max-height:180px;overflow:auto;margin-top:10px}
+.imported-document{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-border);padding:8px 12px;border-radius:6px;background:var(--color-surface);font-size:13px}
+.imported-document span{min-width:0;overflow-wrap:anywhere}
