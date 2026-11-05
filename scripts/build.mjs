@@ -5,6 +5,7 @@
  * hostname is used for production even when VERCEL_URL is an immutable build URL.
  */
 import { cp, mkdir, readFile, rm, writeFile, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -14,26 +15,18 @@ const output = path.join(root, 'dist');
 
 const STABLE_PRODUCTION_ORIGIN = 'https://dramaforge-lemon-ten.vercel.app';
 
-// Never publish a broken "install connector" action in production.
-// A .exe placeholder is not a valid installation package.
-async function verifyNativeInstaller(env = process.env) {
-  const installer = path.join(source, 'downloads', 'DramaForge-Setup-Windows.exe');
-  const strict = env.VERCEL_ENV === 'production';
-  try {
-    const details = await stat(installer);
-    const bytes = await readFile(installer);
-    const peOffset = bytes.length > 0x40 ? bytes.readUInt32LE(0x3c) : -1;
-    if (details.size < 100_000 || bytes[0] !== 0x4d || bytes[1] !== 0x5a || peOffset < 0x40 || peOffset + 4 > bytes.length || bytes.toString('ascii', peOffset, peOffset + 4) !== 'PE\0\0') {
-      throw new Error('The installer is not a valid Windows PE executable');
-    }
-    return true;
-  } catch(error) {
-    if (strict) throw new Error('Blocked production deployment: Windows installer not built. Run the NodeCanvas-derived Windows GitHub Actions workflow, verify the EXE, and place it at web/downloads/DramaForge-Setup-Windows.exe. '+error.message);
-    console.warn('Connector installer not available. Preview/local build will show installation unavailable.');
-    return false;
-  }
+// Use the user's proven NodeCanvas v1.13.0 installer EXACTLY as supplied.
+// Check the binary fingerprint; there is no Windows compilation on Vercel.
+const NODECANVAS_SHA256 = '2ffa9dfa6232d6435c992dd741c27018316c6a01beb553ecde9c530351a74178';
+async function verifyNativeInstaller() {
+  const installer=path.join(source,'downloads','NodeCanvas-Setup-v1.13.0.exe');
+  const bytes=await readFile(installer);
+  const peOffset=bytes.length>0x40?bytes.readUInt32LE(0x3c):-1;
+  const sha=createHash('sha256').update(bytes).digest('hex');
+  if(bytes.length<100_000||bytes[0]!==0x4d||bytes[1]!==0x5a||peOffset<0x40||peOffset+4>bytes.length||bytes.toString('ascii',peOffset,peOffset+4)!=='PE\0\0'||sha!==NODECANVAS_SHA256)
+    throw new Error('원본 NodeCanvas 설치 EXE의 내용이나 무결성이 맞지 않습니다.');
+  return true;
 }
-
 
 function deploymentOrigin(env = process.env) {
   const raw = env.PUBLIC_SITE_URL?.trim()

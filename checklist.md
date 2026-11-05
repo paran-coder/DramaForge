@@ -1,9 +1,15 @@
-# DramaForge v1.8.1 checklist
-- [x] NodeCanvas 설치·실행·제거 C# 원본 포팅
-- [x] NodeCanvas 페어링 해시/브라우저 실행 방식과 일치
-- [x] 정설·시나리오 기능 변경 없음
-- [ ] Windows 빌드 아티팩트 생성 및 검사
-- [ ] Windows 실기기 설치/실행
-- [ ] 실계정 Codex 인증 및 AI 작업
-- [ ] Preview 배포 및 검수
-- [ ] 운영 배포
+# DramaForge v1.8.2 개발 체크리스트
+
+- [x] 원본 NodeCanvas v1.13.0 실행 파일을 변경 없이 복사하고 SHA-256 확인
+- [x] 원본 소스 ZIP과 코드 보관
+- [x] 브라우저에서 원본 프로토콜(`nodecanvas://connect`) 사용
+- [x] 로컬 포트 7330, NodeCanvas 인증 API 계약 유지
+- [x] 설치 링크를 원본 EXE로 수정
+- [x] Vercel 프로덕션에서 Windows 바이너리 빌드 요구 제거
+- [x] 앱 UI/매뉴얼에서 실제 지원 범위 명시
+- [x] NodeCanvas 원본 서버에 연결하는 통합 테스트 추가
+- [x] 기존 회귀 테스트 포함 155개 통과
+- [x] `VERCEL_ENV=production npm run build` 통과 및 dist EXE 무결성 확인
+- [ ] 사용자 PC에서 원본 EXE 설치·Windows 승인창·Codex 실제 로그인·이미지 생성 테스트
+- [ ] GitHub 작업 브랜치/Preview 확인 후 운영 배포
+- [ ] 샷·대본 텍스트 생성용 별도 호환 확장 검토(원본 NodeCanvas API에는 없음)

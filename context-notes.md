@@ -1,7 +1,9 @@
-# DramaForge v1.8.1 context-notes
-- 승인 범위: NodeCanvas 연결 기능 **직접 이식**; 무의미한 독립 재구현 중단
-- 기준: NodeCanvas v1.13.0 원본 ZIP, 기존 DramaForge v1.8.0
-- 보존: 데이터/정설/시나리오 UI, 로컬 저장, 승인 규칙, 원격 전송 정책
-- 포팅: Native C# installer + launcher + uninstaller, 연결 챌린지 해시 호환
-- 미검증: Windows C# 컴파일, 실계정 로그인, Vercel 새 배포
-- 보안: NodeCanvas 원본 사용 흐름은 유지하되 origin은 공식 DramaForge+로컬개발로 제한
+# DramaForge v1.8.2 context notes
+
+- User explicitly requested **reuse the working NodeCanvas source/files unchanged** instead of constructing another connector/installer.
+- Use original NodeCanvas v1.13.0 Windows installer bytes, protocol `nodecanvas://connect`, loopback port 7330, and original challenge + /api/claim + tab lease flow.
+- No rename or modification of the original PE executable; no in-Vercel Windows compilation.
+- Keep existing DramaForge screenplay/canon tools and local data unmodified except connector integrations and UI copy.
+- Original NodeCanvas connector supports Codex account status/login and IMAGE generation only (`/api/jobs`). Text endpoints in DramaForge are not implemented by unmodified NodeCanvas binary; never claim those work.
+- Existing v1.8.1 custom bridge sources may remain as legacy source, but are not the default/browser connector. Avoid mixing tokens, ports, or claiming support based on it.
+- Test source binary hash, protocol contract, build success, UI preview and API bridge mock; original Windows runtime execution must be checked by user separately.

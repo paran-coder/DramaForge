@@ -58,17 +58,15 @@ test('explicit PUBLIC_SITE_URL takes precedence over preview VERCEL_URL', () => 
 });
 
 
-test('production build refuses to deploy when the real Windows installer EXE is absent', () => {
-  let error;
-  try {
-    execFileSync(process.execPath, ['scripts/build.mjs'], {
-      cwd:root,
-      env:{...process.env, PUBLIC_SITE_URL:'', VERCEL_ENV:'production', VERCEL_URL:'dramaforge-private.vercel.app'},
-      encoding:'utf8', stdio:'pipe',
-    });
-  } catch (e) { error=e; }
-  assert.ok(error, 'Production build must not proceed without verified installer');
-  assert.match(String(error.stderr),/Blocked production deployment: Windows installer not built/);
+test('production build succeeds with an identical original NodeCanvas installer', () => {
+  execFileSync(process.execPath, ['scripts/build.mjs'], {
+    cwd:root,
+    env:{...process.env, PUBLIC_SITE_URL:'', VERCEL_ENV:'production', VERCEL_URL:'dramaforge-private.vercel.app'},
+    encoding:'utf8', stdio:'pipe',
+  });
+  const html=readFileSync(path.join(root,'dist/index.html'),'utf8');
+  assert.match(html,/https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png/);
+  assert.equal(readFileSync(path.join(root,'dist/downloads/NodeCanvas-Setup-v1.13.0.exe')).length,175616);
 });
 test('preview deploy continues to use its own preview URL, not production domain', () => {
   execFileSync(process.execPath, ['scripts/build.mjs'], {

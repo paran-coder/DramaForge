@@ -4,7 +4,7 @@ const read=x=>readFileSync(new URL('../'+x,import.meta.url),'utf8');
 test('connection dialog provides health check but hides legacy recovery installer',()=>{
  const html=read('web/index.html'),main=read('web/main.mjs');
  for(const id of ['bridgeHealthBtn','bridgeRepairBtn'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(main,/127\.0\.0\.1:7331\/health/);
+ assert.match(main,/127\.0\.0\.1:7330\/api\/ready/);
  assert.match(main,/bridgeRepairBtn'\)\.hidden=true/);
  assert.match(main,/startNativeConnection/);
  assert.match(main,/PC 연결 앱 열기/);

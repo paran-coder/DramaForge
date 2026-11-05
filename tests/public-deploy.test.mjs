@@ -16,7 +16,7 @@ test('static public Vercel config has no server backend and restricts local brid
  assert.equal(config.outputDirectory,'dist');
  assert.equal(config.buildCommand,'npm run build');
  const headers=config.headers.find(x=>x.source==='/(.*)').headers;const map=new Map(headers.map(x=>[x.key,x.value]));
- assert.match(map.get('Content-Security-Policy'),/http:\/\/127\.0\.0\.1:7331/);
+ assert.match(map.get('Content-Security-Policy'),/http:\/\/127\.0\.0\.1:7330/);
  assert.doesNotMatch(map.get('Content-Security-Policy'),/unsafe-eval|unsafe-inline|\*;/);
  assert.match(map.get('Content-Security-Policy'),/frame-ancestors 'none'/);
  assert.equal(map.get('X-Frame-Options'),'DENY');

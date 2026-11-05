@@ -5,8 +5,8 @@ test('installation UX offers a native setup action and an OS-protocol activation
  const html=read('web/index.html'),main=read('web/main.mjs');
  assert.match(html,/id="installConnectorBtn"/);assert.match(html,/id="installProgress"[^>]*role="status"/);
  assert.match(html,/PC 연결 앱 열기/);assert.doesNotMatch(html,/<ol class="connector-steps">/);
- assert.match(main,/DramaForge-Setup-Windows\.exe/);assert.doesNotMatch(main,/DramaForge-Setup-Windows\.cmd/);
- assert.match(main,/bridge\.activate\(/);assert.match(main,/watchInstallation\(\)/);
+ assert.match(main,/NodeCanvas-Setup-v1\.13\.0\.exe/);assert.doesNotMatch(main,/NodeCanvas-Setup-v1\.13\.0\.cmd/);
+ assert.match(main,/bridge\.activate\(/);assert.doesNotMatch(main,/watchInstallation\(\);/);
 });
 test('setup bundle uses SHA-256 pinned official runtime source, per-user install and protocol handler',()=>{
  const ps=read('installer/NodeCanvasPort.cs'),cs=read('installer/NodeCanvasPort.cs');

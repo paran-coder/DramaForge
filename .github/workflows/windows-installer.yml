@@ -1,12 +1,6 @@
-name: Build DramaForge NodeCanvas-Ported Windows Installer
+name: LEGACY ONLY - no longer used for website connector
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'installer/**'
-      - 'bridge/**'
-      - 'web/bridge-client.mjs'
-      - '.github/workflows/windows-installer.yml'
 permissions:
   contents: read
 jobs:
