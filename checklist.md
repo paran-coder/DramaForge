@@ -1,17 +1,9 @@
-# DramaForge v1.8.0 — 개발 점검
-- [x] NodeCanvas 원본 연결 구조 확인
-- [x] 정설/작품 데이터에 영향 없는 브리지 API 교체
-- [x] Origin만으로 발급되던 인증 토큰 제거
-- [x] 1회용 확인값 파일 및 claim 구현
-- [x] 브라우저 custom URL 호출 UI
-- [x] Windows 네이티브 런처/GUI 설치 소스 작성
-- [x] 구버전 설치 폴더 롤백 및 사용자 범위 프로토콜 등록 코드
-- [x] 기존 기능 + 신규 연결 테스트 147개 통과
-- [x] 정적 웹앱 빌드 통과
-- [x] Chromium 정적 연결 UI 2개 해상도 확인
-- [x] 매뉴얼 및 보고서 갱신
-- [ ] Windows 러너에서 실제 C# 컴파일/EXE self-test
-- [ ] 코드 서명
-- [ ] Windows 사용자 PC 설치/업데이트/자동 실행 검증
-- [ ] 실제 ChatGPT 로그인 및 이미지 생성 테스트
-- [ ] GitHub Preview 배포 및 Vercel 연결 검증
+# DramaForge v1.8.1 checklist
+- [x] NodeCanvas 설치·실행·제거 C# 원본 포팅
+- [x] NodeCanvas 페어링 해시/브라우저 실행 방식과 일치
+- [x] 정설·시나리오 기능 변경 없음
+- [ ] Windows 빌드 아티팩트 생성 및 검사
+- [ ] Windows 실기기 설치/실행
+- [ ] 실계정 Codex 인증 및 AI 작업
+- [ ] Preview 배포 및 검수
+- [ ] 운영 배포

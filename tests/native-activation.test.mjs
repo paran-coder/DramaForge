@@ -6,7 +6,7 @@ import {ActivationGrants,validActivationOrigin} from '../bridge/activation.mjs';
 import {createBridge} from '../bridge/server.mjs';
 import {BridgeClient} from '../web/bridge-client.mjs';
 const ORIGIN='https://dramaforge-lemon-ten.vercel.app';
-const SECRET='ab'.repeat(32),CHALLENGE=createHash('sha256').update(Buffer.from(SECRET,'hex')).digest('hex');
+const SECRET='ab'.repeat(32),CHALLENGE=createHash('sha256').update(SECRET).digest('hex');
 const fakeProvider=()=>({status:async()=>({installed:true,account:{type:'chatgpt',plan:'test'}}),login:async()=>({authUrl:'https://auth.openai.com/example'}),shutdown:async()=>{}});
 test('grants: invalid origin, expired event, replay and different origin are rejected',()=>{
  let now=1_000_000;const grants=new ActivationGrants({now:()=>now});

@@ -58,23 +58,18 @@ test('explicit PUBLIC_SITE_URL takes precedence over preview VERCEL_URL', () => 
 });
 
 
-test('production deploy uses public canonical domain instead of deployment-specific VERCEL_URL', () => {
-  execFileSync(process.execPath, ['scripts/build.mjs'], {
-    cwd: root,
-    env: {
-      ...process.env, PUBLIC_SITE_URL: '', VERCEL_ENV: 'production',
-      VERCEL_URL: 'dramaforge-7zsr00dbr-private.vercel.app',
-    },
-    encoding: 'utf8',
-  });
-  const html = readFileSync(path.join(root, 'dist/index.html'), 'utf8');
-  assert.match(html, /property="og:url" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/"/);
-  assert.match(html, /rel="canonical" href="https:\/\/dramaforge-lemon-ten\.vercel\.app\/"/);
-  assert.match(html, /property="og:image" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png"/);
-  assert.match(html, /name="twitter:image" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png"/);
-  assert.doesNotMatch(html, /private\.vercel\.app/);
+test('production build refuses to deploy when the real Windows installer EXE is absent', () => {
+  let error;
+  try {
+    execFileSync(process.execPath, ['scripts/build.mjs'], {
+      cwd:root,
+      env:{...process.env, PUBLIC_SITE_URL:'', VERCEL_ENV:'production', VERCEL_URL:'dramaforge-private.vercel.app'},
+      encoding:'utf8', stdio:'pipe',
+    });
+  } catch (e) { error=e; }
+  assert.ok(error, 'Production build must not proceed without verified installer');
+  assert.match(String(error.stderr),/Blocked production deployment: Windows installer not built/);
 });
-
 test('preview deploy continues to use its own preview URL, not production domain', () => {
   execFileSync(process.execPath, ['scripts/build.mjs'], {
     cwd: root,

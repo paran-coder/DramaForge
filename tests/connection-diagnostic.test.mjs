@@ -10,8 +10,8 @@ test('connection dialog provides health check but hides legacy recovery installe
  assert.match(main,/PC 연결 앱 열기/);
 });
 test('native launcher is protocol registered and local-only; no shell command injection API',()=>{
- const launcher=read('installer/ConnectorLauncher.cs');
- assert.match(launcher,/dramaforge:\/\/connect/);assert.match(launcher,/ParseActivation/);
+ const launcher=read('installer/NodeCanvasPort.cs');
+ assert.match(launcher,/dramaforge:\/\/connect/);assert.match(launcher,/Activation\(/);
  assert.match(launcher,/WindowsIdentity/);assert.match(launcher,/UserProfile|LocalApplicationData/);
  assert.match(launcher,/trusted-origins\.txt/);assert.match(launcher,/activations/);
  assert.match(launcher,/DRAMAFORGE_ACTIVATION_DIR/);

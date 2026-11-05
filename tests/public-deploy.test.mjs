@@ -31,11 +31,11 @@ test('public origin still requires native grant, forbids shell work and blocks f
  }
  assert.equal((await send('/api/claim',{secret:'ab'.repeat(32)},'https://attacker.example')).status,403);
  assert.equal((await send('/api/connect',{},ORIGIN)).status,410);
- const secret='fa'.repeat(32),challenge=createHash('sha256').update(Buffer.from(secret,'hex')).digest('hex');
+ const secret='fa'.repeat(32),challenge=createHash('sha256').update(secret).digest('hex');
  assert.equal(b.approveActivation({origin:ORIGIN,challenge,createdAt:Date.now()}),true);
  const ok=await send('/api/claim',{secret},ORIGIN);
  assert.equal(ok.status,200);assert.equal(ok.headers.get('Access-Control-Allow-Origin'),ORIGIN);
- assert.equal(ok.body.version,'1.8.0');
+ assert.equal(ok.body.version,'1.8.1');
  assert.equal((await send('/api/jobs',{mode:'shots',prompt:'scene'},'https://attacker.example',ok.body.token)).status,403);
  assert.equal((await send('/api/jobs',{mode:'terminal',prompt:'rm -rf /'},ORIGIN,ok.body.token)).status,400);
  assert.equal((await send('/api/status',{},ORIGIN,ok.body.token)).status,200);

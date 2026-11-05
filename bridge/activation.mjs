@@ -31,7 +31,7 @@ export class ActivationGrants {
   claim(origin,secret){
     const now=this.now();this.prune(now);
     if(typeof secret!=='string'||!/^[a-f0-9]{64}$/.test(secret))return false;
-    const digest=createHash('sha256').update(Buffer.from(secret,'hex')).digest('hex');
+    const digest=createHash('sha256').update(secret).digest('hex');
     const record=this.pending.get(digest);
     if(!record||record.origin!==origin)return false;
     this.pending.delete(digest);return true;

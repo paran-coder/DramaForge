@@ -524,7 +524,7 @@ $('bridgeHealthBtn').onclick=()=>{
  const tab=window.open('http://127.0.0.1:7331/health','_blank','noopener,noreferrer');
  if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7331/health 를 주소창에 직접 입력하세요.';
 };
-$('bridgeRepairBtn').hidden=true; // Old .cmd recovery is not a native v1.8.0 upgrade path.
+$('bridgeRepairBtn').hidden=true; // Old .cmd recovery is not a native v1.8.1 upgrade path.
 $('loginBtn').onclick=async()=>{
  // A blank tab must be opened synchronously before waiting for the local bridge,
  // otherwise browser popup blockers may prevent the official authentication page.

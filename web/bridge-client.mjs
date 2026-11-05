@@ -9,7 +9,7 @@ export async function makeActivation(origin,cryptoImpl=globalThis.crypto){
  const url=new URL(origin);
  if(url.origin!==origin||(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1'].includes(url.hostname)&&url.port==='4173')))throw new Error('연결할 웹 주소가 유효하지 않습니다.');
  const random=cryptoImpl.getRandomValues(new Uint8Array(32)),secret=hex(random);
- const digest=await cryptoImpl.subtle.digest('SHA-256',random),challenge=hex(new Uint8Array(digest));
+ const digest=await cryptoImpl.subtle.digest('SHA-256',new TextEncoder().encode(secret)),challenge=hex(new Uint8Array(digest));
  return {origin,secret,challenge,url:`dramaforge://connect?origin=${encodeURIComponent(origin)}&challenge=${challenge}`};
 }
 export class BridgeClient {
@@ -29,7 +29,7 @@ export class BridgeClient {
  async presence(){return this.request('presence',{},false,{timeout:1800});}
  async prepareActivation(origin=globalThis.location?.origin){this.prepared=await makeActivation(origin);return this.prepared;}
  async reconnect(){if(!this.token)throw new Error('연결 승인이 필요합니다.');try{return await this.status();}catch(e){this.token=null;this.save();throw e;}}
- async activate({origin=globalThis.location?.origin,openProtocol=(url)=>{globalThis.location.href=url;},onProgress=()=>{},timeoutMs=45000}={}){
+ async activate({origin=globalThis.location?.origin,openProtocol=(url)=>{const link=document.createElement('a');link.href=url;document.body.appendChild(link);link.click();link.remove();},onProgress=()=>{},timeoutMs=45000}={}){
   const activation=this.prepared?.origin===origin?this.prepared:await makeActivation(origin);
   this.prepared=null;const {secret,url}=activation;
   onProgress('PC 연결 앱 실행 요청 중…');openProtocol(url);

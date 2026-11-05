@@ -49,7 +49,7 @@ test('native one-time grant replaces insecure CORS-only authorization',async t=>
  assert.equal((await request('/api/connect','https://untrusted.example')).status,403);
  assert.equal((await request('/api/status',site)).status,401);
  assert.equal((await request('/api/connect',site)).status,410);
- const secret='33'.repeat(32),challenge=createHash('sha256').update(Buffer.from(secret,'hex')).digest('hex');
+ const secret='33'.repeat(32),challenge=createHash('sha256').update(secret).digest('hex');
  assert.equal(bridge.approveActivation({origin:site,challenge,createdAt:Date.now()}),true);
  const established=await request('/api/claim',site,'',{secret});assert.equal(established.status,200);
  const token=established.data.token;

@@ -12,7 +12,7 @@ test('bridge requires native-approved one-use grant; supports queued mock AI job
  assert.equal((await req('/api/status',{})).status,401);
  assert.equal((await req('/api/connect',{})).status,410);
  assert.equal((await req('/api/pair',{code:'0123456789abcdef'})).status,410);
- const secret='10'.repeat(32),challenge=createHash('sha256').update(Buffer.from(secret,'hex')).digest('hex');
+ const secret='10'.repeat(32),challenge=createHash('sha256').update(secret).digest('hex');
  assert.equal(bridge.approveActivation({origin:ORIGIN,challenge,createdAt:Date.now()}),true);
  let response=await req('/api/claim',{secret});assert.equal(response.status,200);const token=response.data.token;
  assert.equal((await req('/api/claim',{secret})).status,401,'grant is single-use');

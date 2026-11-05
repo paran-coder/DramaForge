@@ -9,10 +9,10 @@ test('installation UX offers a native setup action and an OS-protocol activation
  assert.match(main,/bridge\.activate\(/);assert.match(main,/watchInstallation\(\)/);
 });
 test('setup bundle uses SHA-256 pinned official runtime source, per-user install and protocol handler',()=>{
- const ps=read('installer/install-windows.ps1'),cs=read('installer/ConnectorLauncher.cs');
+ const ps=read('installer/NodeCanvasPort.cs'),cs=read('installer/NodeCanvasPort.cs');
  assert.match(ps,/nodejs\.org\/dist/);assert.match(ps,/github\.com\/openai\/codex\/releases/);
- assert.match(ps,/Get-FileHash/);assert.match(ps,/LOCALAPPDATA/);assert.match(ps,/HKCU:/);
- assert.match(ps,/127\.0\.0\.1/);assert.match(cs,/LocalApplicationData/);
+ assert.match(ps,/SHA256|RuntimeHashes/);assert.match(ps,/LocalApplicationData/);assert.match(ps,/Registry.CurrentUser/);
+ assert.match(ps,/IPAddress.Loopback/);assert.match(cs,/LocalApplicationData/);
  assert.match(ps,/Software\\Classes\\dramaforge/);assert.match(cs,/NodeCanvas|dramaforge:\/\/connect/);
- assert.match(ps,/Remove-ItemProperty.*DramaForgeConnector/);
+ assert.match(ps,/RegisterUninstall/);
 });
