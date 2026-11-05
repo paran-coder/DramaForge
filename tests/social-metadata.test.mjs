@@ -66,7 +66,7 @@ test('production build succeeds with an identical original NodeCanvas installer'
   });
   const html=readFileSync(path.join(root,'dist/index.html'),'utf8');
   assert.match(html,/https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png/);
-  assert.equal(readFileSync(path.join(root,'dist/downloads/NodeCanvas-Setup-v1.13.0.exe')).length,175616);
+  assert.equal(readFileSync(path.join(root,'vendor/nodecanvas-v1.13.0/web/2026-10-31-NodeCanvas-Setup-v1.13.0.exe')).length,175616);
 });
 test('preview deploy continues to use its own preview URL, not production domain', () => {
   execFileSync(process.execPath, ['scripts/build.mjs'], {

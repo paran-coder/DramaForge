@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {BridgeClient,makeActivation} from '../web/nodecanvas-native-client.mjs';
+import {BridgeClient,makeActivation} from '../vendor/nodecanvas-compat-client.mjs';
 
 const ORIGIN='https://dramaforge-lemon-ten.vercel.app';
 const ORIGINAL_EXE='2ffa9dfa6232d6435c992dd741c27018316c6a01beb553ecde9c530351a74178';
-const original=()=>readFileSync(new URL('../web/downloads/NodeCanvas-Setup-v1.13.0.exe',import.meta.url));
+const original=()=>readFileSync(new URL('../vendor/nodecanvas-v1.13.0/web/2026-10-31-NodeCanvas-Setup-v1.13.0.exe',import.meta.url));
 
 test('original NodeCanvas v1.13.0 EXE is byte-for-byte unchanged',()=>{
  const bytes=original();

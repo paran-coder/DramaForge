@@ -19,7 +19,7 @@ const STABLE_PRODUCTION_ORIGIN = 'https://dramaforge-lemon-ten.vercel.app';
 // Check the binary fingerprint; there is no Windows compilation on Vercel.
 const NODECANVAS_SHA256 = '2ffa9dfa6232d6435c992dd741c27018316c6a01beb553ecde9c530351a74178';
 async function verifyNativeInstaller() {
-  const installer=path.join(source,'downloads','NodeCanvas-Setup-v1.13.0.exe');
+  const installer=path.join(root,'vendor','nodecanvas-v1.13.0','web','2026-10-31-NodeCanvas-Setup-v1.13.0.exe');
   const bytes=await readFile(installer);
   const peOffset=bytes.length>0x40?bytes.readUInt32LE(0x3c):-1;
   const sha=createHash('sha256').update(bytes).digest('hex');

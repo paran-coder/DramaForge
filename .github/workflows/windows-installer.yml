@@ -1,4 +1,4 @@
-name: Build DramaForge NodeCanvas-based connector v1.9.0
+name: Build DramaForge NodeCanvas-based connector v1.9.1
 on:
   workflow_dispatch:
 permissions:
@@ -24,6 +24,6 @@ jobs:
           if ($bytes.Length -lt 100000 -or $bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A){throw 'Not a valid installer PE'}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: DramaForge-Setup-Windows-v1.9.0-unsigned
+          name: DramaForge-Setup-Windows-v1.9.1-unsigned
           path: web/downloads/DramaForge-Setup-Windows.exe
           if-no-files-found: error

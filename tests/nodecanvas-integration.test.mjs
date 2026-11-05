@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createConnector} from '../vendor/nodecanvas-v1.13.0/connector/2026-10-31-server.mjs';
-import {BridgeClient} from '../web/nodecanvas-native-client.mjs';
+import {BridgeClient} from '../vendor/nodecanvas-compat-client.mjs';
 const ORIGIN='https://dramaforge-lemon-ten.vercel.app';
 
 test('unmodified NodeCanvas server receives native approval and handles login/image via DramaForge web adapter',async t=>{

@@ -1,18 +1,19 @@
-# DramaForge v1.9.0
-NodeCanvas v1.13.0의 Codex 연결 구현을 기반으로 DramaForge의 대본·샷·기획 분석을 확장합니다.
-운영 배포 전 Windows 네이티브 설치 EXE를 별도 빌드해야 합니다. 기존 NodeCanvas 바이너리는 텍스트 작업을 지원하지 않습니다.
+# DramaForge v1.9.1
 
-## 개발
-- `npm test`
-- `npm run build`
-- Windows GitHub Actions의 네이티브 연결 앱 빌드 후 생성된 EXE를 `web/downloads/DramaForge-Setup-Windows.exe`에 배치
-- `npm run build`는 실제 EXE가 없다면 일반 정적 웹페이지를 빌드하지만, 설치 버튼은 비활성 안내를 표시합니다.
+사용자에게 보이는 연결 화면에서 다른 제품의 내부 기술 설명을 제거했습니다. 새 Windows 연결 앱을 설치해야 `dramaforge://`가 실행됩니다.
 
-## 배포 조건
-- Vercel 웹앱은 Windows EXE 없이도 정적으로 빌드되지만, 이 경우 첫 설치 버튼에는 설치 파일 미배포 오류가 표시됩니다. **웹앱 배포 통과는 PC 연결 성공과 다릅니다.**
-- GitHub Actions `Build DramaForge NodeCanvas-based connector v1.9.0`을 Windows 러너에서 실행하고 `DramaForge-Setup-Windows.exe` 아티팩트를 받습니다.
-- 실제 EXE를 `web/downloads/DramaForge-Setup-Windows.exe`에 배치하고 Preview로 재배포합니다.
-- Windows에서 설치 → `dramaforge://connect` → 공식 ChatGPT 로그인 → 대본/샷 텍스트 → 스토리보드 이미지 순서로 검증 후 공개합니다.
-- 설치 EXE는 이 Linux 작업 환경에서 빌드되지 않았습니다. **이 ZIP에 완성된 신규 EXE는 없습니다.**
+## 현재 배포 상태
 
-자세한 변경·검증 사항은 `docs/NODECANVAS_TEXT_EXTENSION.md`, `docs/TEST_REPORT_v1.9.0.md`를 확인하세요.
+- 이 소스에는 새로운 DramaForge Windows 설치 EXE가 **없습니다**.
+- 원본 참고 EXE는 `vendor/`에만 보관하며 **웹 배포에서는 다운로드할 수 없습니다**.
+- Vercel의 정적 빌드는 가능하지만 EXE를 배포하지 않으면 설치 버튼은 비활성화됩니다.
+- 실제 연결을 사용하려면 Windows GitHub Actions에서 빌드된 EXE를 `web/downloads/DramaForge-Setup-Windows.exe`에 배치하고 Vercel에 다시 배포해야 합니다.
+- 실제 Windows 설치/프로토콜 승인/로그인/샷 생성은 별도 검증 전에는 완료로 표기하지 않습니다.
+
+## 검증
+
+`npm test` 및 `npm run build`
+
+## 설치 프로그램 빌드 (Windows)
+
+GitHub Actions의 `Build DramaForge NodeCanvas-based connector v1.9.1`을 실행하거나 Windows PowerShell에서 `./installer/build-windows.ps1`을 실행합니다. EXE는 `web/downloads/DramaForge-Setup-Windows.exe`로 생성됩니다.

@@ -1,11 +1,11 @@
-# DramaForge-v1.9.0 검증 체크리스트
-- [x] NodeCanvas 이미지·인증 provider 구현을 기반으로 확장
-- [x] 대본/샷, 정설 후보, 기획 검토 Codex text path
-- [x] 도구/셸 승인 불가, 승인 정설 변경 금지
-- [x] 브라우저 client :7331, dramaforge:// 전용 연결
-- [x] Vercel CSP :7331 연결 허용
-- [x] Windows 인스톨러 빌드 스크립트·GitHub Actions 갱신
-- [x] 회귀 테스트 및 Vercel 정적 빌드
-- [ ] GitHub Actions Windows 실 빌드(이 환경에서 Windows 실행 불가)
-- [ ] EXE 서명/배포
-- [ ] 사용자 PC 설치, Codex 실계정 로그인, 실제 텍스트+이미지 생성 검증
+# DramaForge-v1.9.1 checklist
+
+- [x] 연결 화면 NodeCanvas 문구 제거
+- [x] 설치 파일 존재 여부 확인과 상태 분리
+- [x] 로그인 버튼 승인 전 비활성화
+- [x] Windows 설치 버전 비교 수정
+- [x] 원본 EXE 웹 배포물에서 제외
+- [x] 구형 CI 파일 체크 정리
+- [ ] Windows Actions에서 EXE 실제 빌드
+- [ ] Windows 실기기 설치·프로토콜·로그인 통합 검증
+- [ ] Vercel Preview 배포 및 설치 파일 확인

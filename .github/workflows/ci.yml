@@ -22,5 +22,5 @@ jobs:
       - name: Check public static assets
         run: |
           test -s web/index.html
-          test -s web/downloads/DramaForge-Connector-v1.5.0.zip
+          node --check web/bridge-client.mjs
           node --check bridge/server.mjs

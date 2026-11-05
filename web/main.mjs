@@ -464,10 +464,12 @@ function setDisconnected(message){
  $('connectBtn').textContent='◉ AI 연결';
  $('firstInstallHelp').hidden=false;
  $('connectionStatus').textContent=message;
+ $('loginBtn').disabled=true;
  $('loginBtn').title='PC 연결을 승인한 다음 ChatGPT 로그인할 수 있습니다.';
 }
 async function renderConnectedStatus(){
  const status=await bridge.status();
+ $('loginBtn').disabled=false;
  $('firstInstallHelp').hidden=true;
  $('connectBtn').textContent=status.account?'◉ AI 연결됨':'◉ 브리지 연결';
  $('connectionStatus').textContent=status.account?`DramaForge PC 연결됨 · ChatGPT 로그인됨 · 대본·샷·이미지 생성 사용 가능 (플랜 ${status.account.plan||'미확인'})`:
@@ -489,18 +491,31 @@ function watchInstallation(){
   }catch{}finally{inFlight=false;}
  },2000);
 }
+async function checkInstallerAvailability(){
+ const button=$('installConnectorBtn');
+ if(!installFileForPlatform())return;
+ try{
+  const response=await fetch(WINDOWS_SETUP,{method:'HEAD',cache:'no-store',signal:AbortSignal.timeout(4500)});
+  const type=response.headers.get('content-type')||'';
+  button.disabled=!(response.ok && /application|octet-stream|binary/i.test(type));
+  if(button.disabled)$('installProgress').textContent='설치 파일이 아직 배포되지 않았습니다. 연결 앱 설치 파일이 준비되어야 처음 연결할 수 있습니다.';
+ }catch{
+  button.disabled=true;
+  $('installProgress').textContent='설치 파일을 확인하지 못했습니다. 페이지를 새로고침한 뒤 다시 시도하세요.';
+ }
+}
 $('installConnectorBtn').onclick=async()=>{
  const url=installFileForPlatform();
  if(!url){$('installProgress').textContent='현재 Windows용 네이티브 설치가 준비되어 있습니다. 다른 운영체제 설치는 별도 검증이 필요합니다. macOS/Linux 연결은 추후 검증 후 제공합니다.';return;}
  try{
   const response=await fetch(url,{method:'HEAD',cache:'no-store'});
-  if(!response.ok||!response.headers.get('content-type')?.match(/application|octet-stream|binary/i))throw new Error('네이티브 설치 파일이 아직 배포되지 않았습니다. Windows 빌드 산출물을 올려야 합니다.');
+  if(!response.ok||!response.headers.get('content-type')?.match(/application|octet-stream|binary/i))throw new Error('연결 앱 설치 파일이 아직 준비되지 않았습니다. 다운로드할 수 있는 설치 파일이 배포되어야 합니다.');
   const a=document.createElement('a');a.href=url;a.download='DramaForge-Setup-Windows.exe';document.body.append(a);a.click();a.remove();
-  $('installProgress').textContent='DramaForge 전용 설치 프로그램을 실행한 뒤 「PC 연결 앱 열기」를 누르세요. 웹주소 승인창이 나타납니다.';
+  $('installProgress').textContent='다운로드한 설치 프로그램을 한 번 실행하고 완료한 뒤 「PC 연결 앱 열기」를 누르세요.';
  }catch(e){$('installProgress').textContent=e.message;}
 };
 async function startNativeConnection(){
- $('connectionStatus').textContent='DramaForge PC 앱을 열도록 요청합니다. Windows의 앱 열기 창을 확인하세요.';
+ $('connectionStatus').textContent='PC 연결 앱 실행을 요청하고 있습니다. 운영체제의 앱 열기 안내가 표시되면 승인해 주세요.';
  try{
   await bridge.activate({origin:window.location.origin,onProgress:(message)=>{$('connectionStatus').textContent=message;}});
   await renderConnectedStatus();stopInstallWatch();notice('DramaForge PC 연결이 승인되었습니다.');return true;
@@ -512,7 +527,7 @@ async function autoConnect({silent=false}={}){
   await bridge.reconnect();await renderConnectedStatus();stopInstallWatch();return true;
  }catch(e){if(silent){setDisconnected('PC 연결 승인이 필요합니다.');return false;}return startNativeConnection();}
 }
-$('connectBtn').onclick=async()=>{$('connectDialog').showModal();void prewarmNativeActivation();if(bridge.token)await autoConnect({silent:true});};
+$('connectBtn').onclick=async()=>{$('connectDialog').showModal();void prewarmNativeActivation();void checkInstallerAvailability();if(bridge.token)await autoConnect({silent:true});};
 $('autoConnectBtn').onclick=()=>startNativeConnection();
 async function checkStatus(){
  try{if(!bridge.token)throw new Error('먼저 PC 연결 앱을 열고 승인하세요.');await renderConnectedStatus();}
@@ -528,7 +543,7 @@ $('loginBtn').onclick=async()=>{
  // A blank tab must be opened synchronously before waiting for the local bridge,
  // otherwise browser popup blockers may prevent the official authentication page.
  const tab=window.open('about:blank','_blank');
- $('connectionStatus').textContent='연결 프로그램과 Codex 로그인 상태를 확인하는 중…';
+ $('connectionStatus').textContent='연결 앱과 ChatGPT 로그인 상태를 확인하는 중…';
  try{
   if(!bridge.token){tab?.close();$('connectionStatus').textContent='먼저 「PC 연결 앱 열기」를 눌러 Windows에서 연결 요청을 승인해 주세요.';void prewarmNativeActivation();return;}
   const result=await bridge.login();
