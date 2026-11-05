@@ -344,3 +344,8 @@ dialog code {color: var(--color-primary);}
 .install-help p{font-size:14px;line-height:1.6;color:var(--color-text)}
 .install-help #installConnectorBtn{min-height:44px;margin:4px 0 0}
 .install-help #installProgress{color:var(--color-muted-strong);margin:10px 0 0}
+
+.project-title-row {display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;}
+.project-title-row h1 {overflow-wrap:anywhere;}
+.connection-complete {cursor:default;user-select:text;}
+#connectDialog .dialog-actions [hidden] {display:none;}

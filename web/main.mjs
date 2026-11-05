@@ -365,6 +365,36 @@ $('addSeriesRecordBtn').onclick=async()=>{try{
  const value=kind==='event'?{title:$('eventTitle').value,episode:$('eventEpisode').value,order:$('eventOrder').value,description:$('eventDescription').value}:kind==='knowledge'?{character:$('knowledgeCharacter').value,fact:$('knowledgeFact').value,learnedEpisode:$('knowledgeEpisode').value,audienceRevealEpisode:$('knowledgeReveal').value||null,knowledgeKind:$('knowledgeKind').value}:{clue:$('clueText').value,plantedEpisode:$('cluePlanted').value,payoffEpisode:$('cluePayoff').value||null};
  createSeriesRecord(project,kind,value);await flush();renderRecordList();notice('연속성 후보 등록 완료. 작가가 승인하기 전에는 검사 기준으로 사용되지 않습니다.');
  }catch(e){notice(e.message);}};
+$('renameProjectBtn').onclick=()=>{
+ if(!project)return;
+ const input=$('renameProjectInput');
+ input.value=project.title;
+ input.setCustomValidity('');
+ $('renameProjectDialog').showModal();
+ input.select();
+};
+$('cancelRenameBtn').onclick=()=>$('renameProjectDialog').close();
+$('renameProjectDialog').oncancel=e=>{if($('saveRenameBtn').disabled)e.preventDefault();};
+$('renameProjectInput').oninput=e=>e.target.setCustomValidity('');
+$('renameProjectForm').onsubmit=async e=>{
+ e.preventDefault();
+ const current=project,input=$('renameProjectInput'),button=$('saveRenameBtn');
+ if(button.disabled)return;
+ const title=input.value.trim();
+ if(!title){input.setCustomValidity('작품 이름을 입력하세요.');input.reportValidity();return;}
+ if(title===current.title){$('renameProjectDialog').close();return;}
+ const updatedAt=new Date().toISOString();
+ clearTimeout(saveTimer);
+ button.disabled=$('cancelRenameBtn').disabled=input.disabled=true;
+ try{
+  await persist({...current,title,updatedAt});
+  Object.assign(current,{title,updatedAt});
+  projectList();
+  if(project===current){$('projectHeading').textContent=title;$('titleInput').value=title;}
+  $('renameProjectDialog').close();
+ }catch(error){scheduleSave();notice('작품 이름 저장 실패: '+error.message);}
+ finally{button.disabled=$('cancelRenameBtn').disabled=input.disabled=false;}
+};
 $('titleInput').oninput=e=>{project.title=e.target.value.slice(0,100);project.updatedAt=new Date().toISOString();$('projectHeading').textContent=project.title;projectList();scheduleSave();};
 function updateScript(value,source){if(project.script===value)return;project.script=value;invalidateApprovals(project,'대본 수정');$('scriptInput').value=value;$('writerScriptInput').value=value;$('scriptLength').textContent=`${value.length.toLocaleString()}자`;$('writerScriptLength').textContent=`${value.length.toLocaleString()}자`;scheduleSave();renderShots();$('reviewStatus').textContent='대본 수정 · AI 재검토 필요';scheduleLocalRisks();}
 $('scriptInput').oninput=e=>updateScript(e.target.value,'production');
@@ -460,16 +490,30 @@ function connectionErrorMessage(error){
  return message;
 }
 function setDisconnected(message){
- bridge.token=null;
+ bridge.token=null;bridge.save();
  $('connectBtn').textContent='◉ AI 연결';
  $('firstInstallHelp').hidden=false;
  $('connectionStatus').textContent=message;
+ $('autoConnectBtn').hidden=false;
+ $('pcConnected').hidden=true;
+ $('loginBtn').hidden=false;
+ $('chatgptConnected').hidden=true;
+ $('loginBtn').classList.remove('primary');
+ $('loginBtn').classList.add('ghost');
  $('loginBtn').disabled=true;
  $('loginBtn').title='PC 연결을 승인한 다음 ChatGPT 로그인할 수 있습니다.';
 }
 async function renderConnectedStatus(){
  const status=await bridge.status();
+ const loggedIn=Boolean(status.account);
+ $('autoConnectBtn').hidden=true;
+ $('pcConnected').hidden=false;
+ $('loginBtn').hidden=loggedIn;
+ $('chatgptConnected').hidden=!loggedIn;
+ $('loginBtn').classList.add('primary');
+ $('loginBtn').classList.remove('ghost');
  $('loginBtn').disabled=false;
+ $('loginBtn').removeAttribute('title');
  $('firstInstallHelp').hidden=true;
  $('connectBtn').textContent=status.account?'◉ AI 연결됨':'◉ 브리지 연결';
  $('connectionStatus').textContent=status.account?`DramaForge PC 연결됨 · ChatGPT 로그인됨 · 대본·샷·이미지 생성 사용 가능 (플랜 ${status.account.plan||'미확인'})`:
@@ -534,6 +578,9 @@ async function checkStatus(){
  catch(e){setDisconnected(connectionErrorMessage(e));}
 }
 $('statusBtn').onclick=checkStatus;
+window.addEventListener('focus',()=>{
+ if($('connectDialog').open&&bridge.token)void checkStatus();
+});
 $('bridgeHealthBtn').onclick=()=>{
  const tab=window.open('http://127.0.0.1:7331/health','_blank','noopener,noreferrer');
  if(!tab)$('connectionStatus').textContent='진단 페이지가 차단되었습니다. http://127.0.0.1:7331/health 를 주소창에 직접 입력하세요.';

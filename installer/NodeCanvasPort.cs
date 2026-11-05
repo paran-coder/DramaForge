@@ -15,8 +15,8 @@ using System.Web.Script.Serialization;
 using Microsoft.Win32;
 
 [assembly: System.Reflection.AssemblyTitle("DramaForge Connector")]
-[assembly: System.Reflection.AssemblyVersion("1.9.4.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.9.4.0")]
+[assembly: System.Reflection.AssemblyVersion("1.9.5.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.9.5.0")]
 class InstalledApp {
  public string Root,Launcher;public Version Version;
  public static readonly string[] Required={"runtime/node.exe","runtime/codex.exe","runtime/codex-code-mode-host.exe","runtime/codex-command-runner.exe","runtime/codex-windows-sandbox-setup.exe","bridge/server.mjs","bridge/activation.mjs","bridge/provider.mjs"};
@@ -24,13 +24,41 @@ class InstalledApp {
  public static readonly string[] RuntimeNames={"node.exe","codex.exe","codex-code-mode-host.exe","codex-command-runner.exe","codex-windows-sandbox-setup.exe"};
  public static readonly string[] RuntimeHashes={"58E74BF02FC5BBACC41DCB8BEF089961CD5BDDD37830B87784E4FC624D145D1F","A395030B56B126F608F2403036DDDB654A9C063213E9C2B5F85D954CF490EBE6","8F98CC7AA079B51DBFBB16A8E655A468A9C37C1CD23E22422C10CDFD6CACE543","7F14523FE94A2D3EE3737198AFA3328FCDE04B53F6774BBD1A3F165666BEC682","CFF8F8861D0BB0DBA601F5D4E74D8EEB578A6B9A5956A6A83C818DAFC7D4894A"};
  public static bool RuntimeOK(string root){try{SafeTree(root);for(int i=0;i<RuntimeNames.Length;i++)if(!File.Exists(Path.Combine(root,"runtime",RuntimeNames[i]))||Hash(Path.Combine(root,"runtime",RuntimeNames[i])).Replace("-","")!=RuntimeHashes[i])return false;return true;}catch{return false;}}
- public static bool Valid(string root){try{SafeTree(root);if(!RuntimeOK(root))return false;string manifest=Path.Combine(root,"2026-10-31-payload.sha256");if(!File.Exists(manifest))return false;using(var embedded=typeof(Program).Assembly.GetManifestResourceStream("trusted-manifest")){if(embedded==null)return false;using(var reader=new StreamReader(embedded)){if(File.ReadAllText(manifest)!=reader.ReadToEnd())return false;}}foreach(string line in File.ReadAllLines(manifest)){string[] pair=line.Split(new[]{'|'},2);string file=Path.GetFullPath(Path.Combine(root,pair[1]));if(!file.StartsWith(Path.GetFullPath(root)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase)||Hash(file).Replace("-","")!=pair[0])return false;}return true;}catch{return false;}}
+ public static bool Valid(string root,bool allowSameVersionBuild=false){
+  try{
+   SafeTree(root);if(!RuntimeOK(root))return false;
+   string manifest=Path.Combine(root,"2026-10-31-payload.sha256");
+   string[] installed=File.ReadAllLines(manifest);
+   using(var embedded=typeof(Program).Assembly.GetManifestResourceStream("trusted-manifest")){
+    if(embedded==null)return false;
+    using(var reader=new StreamReader(embedded)){
+     var expected=new System.Collections.Generic.List<string>();
+     for(string line=reader.ReadLine();line!=null;line=reader.ReadLine())expected.Add(line);
+     if(installed.Length!=expected.Count)return false;
+     for(int i=0;i<installed.Length;i++){
+      string[] pair=installed[i].Split(new[]{'|'},2);
+      string[] trusted=expected[i].Split(new[]{'|'},2);
+      if(pair.Length!=2||pair[1]!=trusted[1])return false;
+      string file=Path.GetFullPath(Path.Combine(root,pair[1]));
+      if(!file.StartsWith(Path.GetFullPath(root)+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))return false;
+      if(installed[i]!=expected[i]){
+       // Native binaries can have different build stamps for the same release.
+       if(!allowSameVersionBuild||!pair[1].EndsWith(".exe",StringComparison.Ordinal))return false;
+       if(System.Reflection.AssemblyName.GetAssemblyName(file).Version!=new Version(TargetVersion.Major,TargetVersion.Minor,TargetVersion.Build,0))return false;
+      }
+      if(Hash(file).Replace("-","")!=pair[0])return false;
+     }
+    }
+   }
+   return true;
+  }catch{return false;}
+ }
  public static void SafeTree(string root){string full=Path.GetFullPath(root),parent=full;while(parent!=null){if((Directory.Exists(parent)||File.Exists(parent))&&(File.GetAttributes(parent)&FileAttributes.ReparsePoint)!=0)throw new Exception("연결된 경로는 사용할 수 없습니다.");parent=Path.GetDirectoryName(parent);}if(!Directory.Exists(full))return;foreach(string item in Directory.GetFileSystemEntries(full)){if((File.GetAttributes(item)&FileAttributes.ReparsePoint)!=0)throw new Exception("연결된 파일 또는 폴더는 사용할 수 없습니다.");if(Directory.Exists(item))SafeTree(item);}}
  public static bool HasVersionFolder(string root){if(!Directory.Exists(root))return false;return Directory.GetDirectories(root,"v*",SearchOption.TopDirectoryOnly).Any(d=>{Version v;return Version.TryParse(Path.GetFileName(d).Substring(1),out v)&&v>=new Version(1,8,0);});}
  public static string Hash(string file){using(var sha=SHA256.Create())using(var stream=File.OpenRead(file))return BitConverter.ToString(sha.ComputeHash(stream));}
  public static InstalledApp Choose(System.Collections.Generic.IEnumerable<InstalledApp> entries){return entries.OrderByDescending(x=>x.Version).ThenBy(x=>x.Root,StringComparer.OrdinalIgnoreCase).FirstOrDefault();}
  public static bool PortInUse(){var listener=new System.Net.Sockets.TcpListener(IPAddress.Loopback,7331);try{listener.Start();return false;}catch{return true;}finally{listener.Stop();}}
- public static readonly Version TargetVersion=new Version(1,9,4);
+ public static readonly Version TargetVersion=new Version(1,9,5);
  public static bool CanRepair(Version existing){return existing==null||existing<=TargetVersion;}
  public static int FailAfter=-1;
  public static void ApplyPayload(string staged,string target){SafeTree(staged);SafeTree(target);if(!Valid(staged))throw new Exception("설치 파일 무결성 검사 실패");string backup=target+".backup-"+Guid.NewGuid().ToString("N");bool moved=false,committed=false;try{if(Directory.Exists(target)){foreach(string file in Directory.GetFiles(target,"*",SearchOption.AllDirectories))using(var handle=new FileStream(file,FileMode.Open,FileAccess.ReadWrite,FileShare.None)){}Directory.Move(target,backup);moved=true;}if(FailAfter==0)throw new IOException("Injected transaction failure");Directory.Move(staged,target);committed=true;if(FailAfter>0)throw new IOException("Injected post-swap failure");if(!Valid(target))throw new IOException("설치 후 검증 실패");}catch{if(committed){Directory.Move(target,staged);}if(moved)Directory.Move(backup,target);throw;}if(moved)Directory.Delete(backup,true);}
@@ -46,7 +74,7 @@ static class Program {
  internal static string[] Activation(string input){var u=new Uri(input);if(u.Scheme!="dramaforge"||u.Host!="connect"||u.AbsolutePath!=""&&u.AbsolutePath!="/"||u.Fragment!=""||u.UserInfo!=""||!u.IsDefaultPort)throw new Exception("올바른 연결 요청이 아닙니다.");var q=HttpUtility.ParseQueryString(u.Query);if(q.Count!=2)throw new Exception("잘못된 연결 요청입니다.");string origin=ParseOrigin(q["origin"]),challenge=q["challenge"];if(challenge==null||challenge.Length!=64||challenge.Any(c=>!(c>='a'&&c<='f'||c>='0'&&c<='9')))throw new Exception("확인값이 올바르지 않습니다.");return new[]{origin,challenge};}
  internal static void Extract(Stream stream,string destination){InstalledApp.SafeTree(destination);string root=Path.GetFullPath(destination)+Path.DirectorySeparatorChar;Directory.CreateDirectory(root);using(var zip=new ZipArchive(stream,ZipArchiveMode.Read)){foreach(var e in zip.Entries){string target=Path.GetFullPath(Path.Combine(root,e.FullName));if(!target.StartsWith(root,StringComparison.OrdinalIgnoreCase))throw new Exception("안전하지 않은 압축 경로입니다.");if(e.FullName.EndsWith("/"))continue;Directory.CreateDirectory(Path.GetDirectoryName(target));using(var src=e.Open())using(var dst=new FileStream(target,FileMode.CreateNew)){src.CopyTo(dst);}}}}
  [STAThread] static int Main(string[] args){Application.EnableVisualStyles();Application.SetCompatibleTextRenderingDefault(false);try {
-  if(args.Length>0&&args[0]=="--self-test"){Activation("dramaforge://connect?origin=https%3A%2F%2Fdramaforge-lemon-ten.vercel.app&challenge="+new string('a',64));bool rejected=false;try{Activation("dramaforge://connect?origin=https%3A%2F%2Fevil.test&challenge="+new string('a',64));}catch{rejected=true;}if(!rejected||!InstalledApp.CanRepair(InstalledApp.TargetVersion)||!InstalledApp.CanRepair(new Version(1,9,3))||!InstalledApp.CanRepair(new Version(1,8,0))||InstalledApp.CanRepair(new Version(1,9,5)))return 1;InstalledApp old=new InstalledApp{Root="old",Version=new Version(1,8,0)},current=new InstalledApp{Root="existing",Version=new Version(1,8,1)};if(InstalledApp.Choose(new[]{old,current})!=current||InstalledApp.Choose(new InstalledApp[0])!=null)return 1;return 0;}
+  if(args.Length>0&&args[0]=="--self-test"){Activation("dramaforge://connect?origin=https%3A%2F%2Fdramaforge-lemon-ten.vercel.app&challenge="+new string('a',64));bool rejected=false;try{Activation("dramaforge://connect?origin=https%3A%2F%2Fevil.test&challenge="+new string('a',64));}catch{rejected=true;}if(!rejected||!InstalledApp.CanRepair(InstalledApp.TargetVersion)||!InstalledApp.CanRepair(new Version(1,9,3))||!InstalledApp.CanRepair(new Version(1,8,0))||InstalledApp.CanRepair(new Version(1,9,6)))return 1;InstalledApp old=new InstalledApp{Root="old",Version=new Version(1,8,0)},current=new InstalledApp{Root="existing",Version=new Version(1,8,1)};if(InstalledApp.Choose(new[]{old,current})!=current||InstalledApp.Choose(new InstalledApp[0])!=null)return 1;return 0;}
 #if LAUNCHER
   if(args.Length>1&&args[0]=="--portable"){Environment.SetEnvironmentVariable("DRAMAFORGE_PORTABLE_DATA",Path.GetFullPath(args[1]));return 2;}
   string[] activation=args.Length>0?Activation(args[0]):null;
@@ -81,13 +109,25 @@ class ConnectorContext:ApplicationContext {
 #else
 class SetupForm:Form {
  Label status;ProgressBar progress;Button install;bool busy;
- public SetupForm(){Text="DramaForge 연결 앱 설치 · v1.9.4";ClientSize=new Size(530,285);FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;Font=new Font("맑은 고딕",10);Controls.Add(new Label{Text="버튼 하나로 내 ChatGPT와 연결",Font=new Font(Font.FontFamily,16,FontStyle.Bold),Location=new Point(28,24),AutoSize=true});Controls.Add(new Label{Text="Windows x64 · 관리자 권한 없이 내 계정에 설치합니다.\n처음 설치할 때 공식 Node.js와 Codex를 다운로드합니다.\n약 170MB 다운로드 · 충분한 디스크 공간과 인터넷이 필요합니다.",Location=new Point(28,70),Size=new Size(480,75)});status=new Label{Text="기존 설치도 파일과 실행 구성 요소를 검사하고 복구합니다.",Location=new Point(28,154),Size=new Size(475,40)};progress=new ProgressBar{Location=new Point(28,202),Size=new Size(475,8)};install=new Button{Text="설치하기",Location=new Point(365,228),Size=new Size(138,36)};install.Click+=async(s,e)=>await Install();Controls.Add(status);Controls.Add(progress);Controls.Add(install);FormClosing+=(s,e)=>{if(busy){e.Cancel=true;status.Text="설치를 완료한 후 닫아 주세요.";}};var existing=InstalledApp.Latest(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","DramaForgeConnector"));if(existing!=null){status.Text="기존 설치 v"+existing.Version+" 확인 · 같은 폴더/구성 요소를 사용합니다.";install.Text="검사 및 복구 설치";}}
- async Task DownloadRuntime(string dir,string url,string sha,string expected,string target){string zip=Path.Combine(dir,Guid.NewGuid()+".zip");ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;using(var client=new WebClient()){client.Headers["User-Agent"]="DramaForge-Setup/1.9.4";client.DownloadProgressChanged+=(s,e)=>{progress.Value=Math.Max(0,Math.Min(100,e.ProgressPercentage));};await client.DownloadFileTaskAsync(new Uri(url),zip);}using(var h=SHA256.Create())using(var f=File.OpenRead(zip)){string actual=BitConverter.ToString(h.ComputeHash(f)).Replace("-","").ToLowerInvariant();if(actual!=sha)throw new Exception("다운로드 검증에 실패했습니다. 다시 설치해 주세요.");}using(var archive=ZipFile.OpenRead(zip)){var entries=archive.Entries.Where(e=>Path.GetFileName(e.FullName)==expected).ToArray();if(entries.Length!=1)throw new Exception("구성 요소 압축 내용이 올바르지 않습니다.");using(var src=entries[0].Open())using(var dst=new FileStream(target,FileMode.CreateNew))src.CopyTo(dst);if(expected=="codex-x86_64-pc-windows-msvc.exe"){foreach(string extra in new[]{"codex-command-runner.exe","codex-windows-sandbox-setup.exe"}){var e=archive.Entries.Single(x=>x.FullName==extra);using(var src=e.Open())using(var dst=new FileStream(Path.Combine(Path.GetDirectoryName(target),extra),FileMode.CreateNew))src.CopyTo(dst);}}}File.Delete(zip);}
+ public SetupForm(){Text="DramaForge 연결 앱 설치 · v1.9.5";ClientSize=new Size(530,285);FormBorderStyle=FormBorderStyle.FixedDialog;MaximizeBox=false;StartPosition=FormStartPosition.CenterScreen;Font=new Font("맑은 고딕",10);Controls.Add(new Label{Text="버튼 하나로 내 ChatGPT와 연결",Font=new Font(Font.FontFamily,16,FontStyle.Bold),Location=new Point(28,24),AutoSize=true});Controls.Add(new Label{Text="Windows x64 · 관리자 권한 없이 내 계정에 설치합니다.\n처음 설치할 때 공식 Node.js와 Codex를 다운로드합니다.\n약 170MB 다운로드 · 충분한 디스크 공간과 인터넷이 필요합니다.",Location=new Point(28,70),Size=new Size(480,75)});status=new Label{Text="기존 설치도 파일과 실행 구성 요소를 검사하고 복구합니다.",Location=new Point(28,154),Size=new Size(475,40)};progress=new ProgressBar{Location=new Point(28,202),Size=new Size(475,8)};install=new Button{Text="설치하기",Location=new Point(365,228),Size=new Size(138,36)};install.Click+=async(s,e)=>await Install();Controls.Add(status);Controls.Add(progress);Controls.Add(install);FormClosing+=(s,e)=>{if(busy){e.Cancel=true;status.Text="설치를 완료한 후 닫아 주세요.";}};var existing=InstalledApp.Latest(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","DramaForgeConnector"));if(existing!=null&&!AlreadyInstalled(existing)){
+  if(existing.Version>InstalledApp.TargetVersion){status.Text="더 최신 연결 앱이 설치되어 있습니다. 기존 앱을 사용하세요.";install.Text="닫기";}
+  else if(existing.Version==InstalledApp.TargetVersion){status.Text="설치 파일 일부를 확인할 수 없습니다. 복구 설치를 선택할 수 있습니다.";install.Text="복구 설치";}
+  else{status.Text="기존 설치 v"+existing.Version+" 확인 · 설치된 구성 요소를 재사용합니다.";install.Text="업데이트";}
+ }}
+ bool AlreadyInstalled(InstalledApp existing){
+  if(existing!=null&&existing.Version==InstalledApp.TargetVersion&&InstalledApp.Valid(existing.Root,allowSameVersionBuild:true)){
+   status.Text="이 버전의 연결 앱이 이미 설치되어 있습니다. 작업실에서 PC 연결 앱을 열어 주세요.";
+   install.Text="닫기";install.Enabled=true;return true;
+  }
+  return false;
+ }
+ async Task DownloadRuntime(string dir,string url,string sha,string expected,string target){string zip=Path.Combine(dir,Guid.NewGuid()+".zip");ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;using(var client=new WebClient()){client.Headers["User-Agent"]="DramaForge-Setup/1.9.5";client.DownloadProgressChanged+=(s,e)=>{progress.Value=Math.Max(0,Math.Min(100,e.ProgressPercentage));};await client.DownloadFileTaskAsync(new Uri(url),zip);}using(var h=SHA256.Create())using(var f=File.OpenRead(zip)){string actual=BitConverter.ToString(h.ComputeHash(f)).Replace("-","").ToLowerInvariant();if(actual!=sha)throw new Exception("다운로드 검증에 실패했습니다. 다시 설치해 주세요.");}using(var archive=ZipFile.OpenRead(zip)){var entries=archive.Entries.Where(e=>Path.GetFileName(e.FullName)==expected).ToArray();if(entries.Length!=1)throw new Exception("구성 요소 압축 내용이 올바르지 않습니다.");using(var src=entries[0].Open())using(var dst=new FileStream(target,FileMode.CreateNew))src.CopyTo(dst);if(expected=="codex-x86_64-pc-windows-msvc.exe"){foreach(string extra in new[]{"codex-command-runner.exe","codex-windows-sandbox-setup.exe"}){var e=archive.Entries.Single(x=>x.FullName==extra);using(var src=e.Open())using(var dst=new FileStream(Path.Combine(Path.GetDirectoryName(target),extra),FileMode.CreateNew))src.CopyTo(dst);}}}File.Delete(zip);}
  void Register(string launcher){using(var k=Registry.CurrentUser.CreateSubKey(@"Software\Classes\dramaforge")){k.SetValue("","URL:DramaForge Connection");k.SetValue("URL Protocol","");using(var c=k.CreateSubKey(@"shell\open\command"))c.SetValue("","\""+launcher+"\" \"%1\"");}}
- void RegisterUninstall(string dest){using(var k=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\DramaForgeConnector")){k.SetValue("DisplayName","DramaForge Connector");k.SetValue("DisplayVersion","1.9.4");k.SetValue("Publisher","DramaForge");k.SetValue("InstallLocation",dest);k.SetValue("UninstallString","\""+Path.Combine(dest,"2026-10-31-Uninstall-v1.9.4.exe")+"\" --uninstall");k.SetValue("NoModify",1,RegistryValueKind.DWord);k.SetValue("NoRepair",1,RegistryValueKind.DWord);}}
+ void RegisterUninstall(string dest){using(var k=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\DramaForgeConnector")){k.SetValue("DisplayName","DramaForge Connector");k.SetValue("DisplayVersion","1.9.5");k.SetValue("Publisher","DramaForge");k.SetValue("InstallLocation",dest);k.SetValue("UninstallString","\""+Path.Combine(dest,"2026-10-31-Uninstall-v1.9.5.exe")+"\" --uninstall");k.SetValue("NoModify",1,RegistryValueKind.DWord);k.SetValue("NoRepair",1,RegistryValueKind.DWord);}}
 
- async Task Install(){if(install.Text=="닫기"){Close();return;}busy=true;install.Enabled=false;string baseRoot=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","DramaForgeConnector"),dest=Path.Combine(baseRoot,"v1.9.4"),staging=Path.Combine(baseRoot,"prepare-"+Guid.NewGuid().ToString("N"));try{
+ async Task Install(){if(install.Text=="닫기"){Close();return;}busy=true;install.Enabled=false;string baseRoot=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","DramaForgeConnector"),dest=Path.Combine(baseRoot,"v1.9.5"),staging=Path.Combine(baseRoot,"prepare-"+Guid.NewGuid().ToString("N"));try{
  if(!Environment.Is64BitOperatingSystem)throw new Exception("Windows x64가 필요합니다.");var existing=InstalledApp.Latest(baseRoot);
+ if(AlreadyInstalled(existing))return;
  if(!InstalledApp.CanRepair(existing==null?null:existing.Version))throw new Exception("더 최신 버전이 설치되어 있습니다. 해당 버전 설치 파일로 복구하세요.");
  if(InstalledApp.PortInUse())throw new Exception("7331 포트를 사용 중인 연결 앱이 있습니다. 기존 DramaForge 연결 앱을 트레이 메뉴에서 종료한 뒤 다시 설치하세요.");
  InstalledApp.SafeTree(baseRoot);
@@ -98,7 +138,7 @@ class SetupForm:Form {
  status.Text="2/3 · 공식 Codex를 다운로드합니다…";await DownloadRuntime(staging,"https://github.com/openai/codex/releases/download/rust-v0.149.1/codex-x86_64-pc-windows-msvc.exe.zip","c19dd84738dee791c4d39a96bd080d94f098af074ae9d2ef5e27d3d85a122665","codex-x86_64-pc-windows-msvc.exe",Path.Combine(runtime,"codex.exe"));
  status.Text="3/3 · Codex 실행 구성 요소를 다운로드합니다…";await DownloadRuntime(staging,"https://github.com/openai/codex/releases/download/rust-v0.149.1/codex-code-mode-host-x86_64-pc-windows-msvc.exe.zip","99e86c60dc20d7ca5b17062922062216700c67d146836a795370b7a8da7c4d14","codex-code-mode-host-x86_64-pc-windows-msvc.exe",Path.Combine(runtime,"codex-code-mode-host.exe"));}
  InstalledApp.ApplyPayload(staging,dest);
- string launcher=Path.Combine(dest,"2026-10-31-DramaForgeConnect-v1.9.4.exe");Register(launcher);RegisterUninstall(dest);status.Text=existing==null?"설치 완료! 작업실에서 연결하기를 누르세요.":"기존 폴더 업데이트 완료! 파일과 실행 구성 요소를 검사하고 복구했습니다.";progress.Value=100;install.Text="닫기";install.Enabled=true;
+ string launcher=Path.Combine(dest,"2026-10-31-DramaForgeConnect-v1.9.5.exe");Register(launcher);RegisterUninstall(dest);status.Text=existing==null?"설치 완료! 작업실에서 연결하기를 누르세요.":"기존 폴더 업데이트 완료! 파일과 실행 구성 요소를 검사하고 복구했습니다.";progress.Value=100;install.Text="닫기";install.Enabled=true;
  }catch(Exception ex){status.Text="완료하지 못했습니다: "+ex.Message;MessageBox.Show(ex.Message+"\n\n작업용 준비 폴더: "+staging,"DramaForge 설치",MessageBoxButtons.OK,MessageBoxIcon.Error);install.Enabled=true;}finally{busy=false;}}
 
 }

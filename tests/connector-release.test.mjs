@@ -22,7 +22,7 @@ test('wrong original image-only installer is not distributed in DramaForge publi
 });
 test('native installer can safely repair its own current release and will not downgrade newer versions',()=>{
  const installer=read('installer/NodeCanvasPort.cs');
- assert.match(installer,/TargetVersion=new Version\(1,9,4\)/);
+ assert.match(installer,/TargetVersion=new Version\(1,9,5\)/);
  assert.match(installer,/!InstalledApp\.CanRepair\(InstalledApp\.TargetVersion\)/);
  assert.match(installer,/InstalledApp\.CanRepair\(new Version\(1,9,3\)\)/);
 });

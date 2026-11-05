@@ -52,7 +52,7 @@ jobs:
           Get-FileHash $p -Algorithm SHA256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: DramaForge-Setup-Windows-v1.9.4-unsigned
+          name: DramaForge-Setup-Windows-v1.9.5-unsigned
           path: web/downloads/DramaForge-Setup-Windows.exe
           if-no-files-found: error
           retention-days: 30
@@ -70,7 +70,7 @@ jobs:
           persist-credentials: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.1.8
         with:
-          name: DramaForge-Setup-Windows-v1.9.4-unsigned
+          name: DramaForge-Setup-Windows-v1.9.5-unsigned
           path: web/downloads
       - name: Commit installer EXE to repository for Vercel static serving
         shell: bash
@@ -87,5 +87,5 @@ jobs:
             echo 'EXE unchanged; no commit needed.'
             exit 0
           fi
-          git commit -m 'build: publish DramaForge native Windows connector v1.9.4'
+          git commit -m 'build: publish DramaForge native Windows connector v1.9.5'
           git push origin HEAD:main

@@ -23,7 +23,7 @@ test('Native installation uses dedicated protocol, per-user registration and ori
   assert.match(source, /7331/);
   assert.match(source, /RuntimeHashes/);
   assert.match(source, /GetManifestResourceStream\("payload\.zip"\)/);
-  assert.match(source, /TargetVersion=new Version\(1,9,4\)/);
+  assert.match(source, /TargetVersion=new Version\(1,9,5\)/);
 });
 test('Vercel build will not pretend installer exists when Windows job has not published it', () => {
   const script = read('scripts/build.mjs');
