@@ -1,4 +1,4 @@
-# DramaForge v1.6.1 — OG 이미지 및 Vercel Web Analytics
+# DramaForge v1.6.2 — OG 이미지 및 Vercel Web Analytics
 
 ## 1. 구현 파일
 
@@ -20,9 +20,16 @@ npm run build
 
 Vercel에 GitHub 프로젝트를 연결할 때는 **Framework Preset: Other**를 사용합니다. 저장소 루트는 이 프로젝트의 `package.json` 및 `vercel.json`이 있는 폴더여야 합니다. Vercel이 `npm run build`를 실행해 `dist/`를 배포하도록 설정했습니다.
 
-배포 전에 도메인을 지정하지 않아도 됩니다. Vercel의 `VERCEL_URL`을 빌드 시 사용하여 `og:image`, `twitter:image` 및 `og:url`을 완성합니다. 나중에 고정 운영 도메인이 생기면 Vercel 프로젝트 환경 변수 `PUBLIC_SITE_URL`에 `https://도메인`을 입력하고 다시 배포할 수 있습니다.
+운영 도메인이 확정되었습니다: **https://dramaforge-lemon-ten.vercel.app/**.
 
-`PUBLIC_SITE_URL`을 설정한 경우 프리뷰 배포에서도 해당 URL을 미리보기 주소로 사용하므로, **운영 환경에만 설정하는 것을 권장**합니다.
+운영 배포 시 `VERCEL_ENV=production`이면 자동으로 다음 주소를 메타데이터에 사용합니다.
+
+- `og:url`, `canonical`: `https://dramaforge-lemon-ten.vercel.app/`
+- `og:image`, `twitter:image`: `https://dramaforge-lemon-ten.vercel.app/og-image.png`
+
+프리뷰 배포에서는 여전히 고유 `VERCEL_URL`을 사용합니다. 나중에 커스텀 도메인이 생기면 Vercel 프로젝트의 **Production** 환경 변수 `PUBLIC_SITE_URL`로 덮어쓸 수 있습니다. 공통 환경 변수로 지정하면 프리뷰 미리보기에도 운영 도메인이 노출되므로 Production 환경에만 지정해야 합니다.
+
+도메인 등록만으로 라이브 서버의 파일이 바뀌지는 않습니다. **변경된 소스를 GitHub에 올리고 Vercel을 재배포**해야 새 메타데이터가 반영됩니다. 실제 사이트 응답 및 Analytics 수집 상태는 배포 후 별도로 검증합니다.
 
 ## 3. Vercel Web Analytics 활성화
 
@@ -44,4 +51,4 @@ Vercel에 GitHub 프로젝트를 연결할 때는 **Framework Preset: Other**를
 
 - Vercel Analytics는 **방문 통계 데이터**를 Vercel로 전송할 수 있습니다. 작품·대본·정설·참조 이미지 자체를 분석 이벤트에 포함시키는 기능은 작성하지 않았습니다.
 - 작품 저장은 기존 IndexedDB이며, Codex에 대한 전송은 사용자 요청에 의한 로컬 브리지 흐름입니다.
-- 아직 공개 주소가 없으므로 Analytics 데이터 수집 및 SNS 실제 미리보기는 현 단계에서 **미검증**입니다.
+- 운영 주소는 확인했으나, Vercel API의 사이트 본문 읽기 권한이 없어 실제 배포 HTML과 SNS 공유 미리보기는 **미검증**입니다. 새 코드를 올린 후 다시 확인해야 합니다.

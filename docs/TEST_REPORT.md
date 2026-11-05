@@ -43,3 +43,19 @@ Chromium 스크린샷: `docs/narrative-ui-desktop-smoke.png`, `docs/narrative-ui
 - 실서버 소셜 크롤러 미리보기: **NOT TESTED** (공개 도메인 미정 및 미배포)
 - Vercel Analytics 실제 방문 이벤트 수신: **NOT TESTED** (대시보드 Enable 및 배포 필요)
 - 기존 서사·정설·로컬 프로젝트 저장 구조: 기능 코드 변경 없음; 자동 회귀 테스트 실행.
+
+
+## v1.6.2 운영 도메인 메타데이터 검증 (2026-11-05)
+
+- 입력된 공개 도메인: `https://dramaforge-lemon-ten.vercel.app/`
+- Vercel 배포 기록: 프로젝트 `dramaforge`, production `READY` (GitHub 커밋 `b13c66148f812789199abbbf79216186435451df`). 배포 상태만 확인했으며 소스 동기화는 하지 않음.
+- 테스트 실행: `npm run check` **126/126 PASS** (v1.6.1의 124개 + 도메인 선택 테스트 2개).
+- Production 빌드에서 `og:url`, `canonical`, `og:image`, `twitter:image`가 확정 도메인 사용: **PASS**.
+- Preview 빌드에서 별도 배포 URL 사용: **PASS**.
+- 이미지 PNG 규격 1200x630: **PASS**.
+- 공개 URL의 실제 HTML/OG 이미지 HTTP 조회: **NOT TESTED** (Vercel 연결의 보호 우회 권한 거부 / 직접 외부 네트워크 접속 불가).
+- Vercel Analytics 실제 활성화·페이지뷰: **NOT VERIFIED** (집계 요청에서 0값만 확인, 수집 활성화 여부를 판정할 수 없음).
+- GitHub push / Vercel 운영 재배포: **NOT PERFORMED**.
+
+### 변경 범위
+`build.mjs`의 생산 도메인 선택, 소셜 메타데이터 테스트, 버전·문서만 변경. 작품 저장, Codex, 정설·서사 관리 기능 변경 없음.

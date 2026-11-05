@@ -1,7 +1,8 @@
 /**
  * Static Vercel build. No user projects or local application state is read.
  * Vercel injects VERCEL_URL on deployments; PUBLIC_SITE_URL takes precedence
- * when a stable production/custom domain is provided later.
+ * when a custom domain is supplied. The approved stable production
+ * hostname is used for production even when VERCEL_URL is an immutable build URL.
  */
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -11,8 +12,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(root, 'web');
 const output = path.join(root, 'dist');
 
+const STABLE_PRODUCTION_ORIGIN = 'https://dramaforge-lemon-ten.vercel.app';
+
 function deploymentOrigin(env = process.env) {
-  const raw = env.PUBLIC_SITE_URL?.trim() || env.VERCEL_URL?.trim();
+  const raw = env.PUBLIC_SITE_URL?.trim()
+    || (env.VERCEL_ENV === 'production' ? STABLE_PRODUCTION_ORIGIN : env.VERCEL_URL?.trim());
   if (!raw) return null; // local build: keep same-origin OG path for preview
   const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
   if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) {

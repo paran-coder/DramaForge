@@ -56,3 +56,34 @@ test('explicit PUBLIC_SITE_URL takes precedence over preview VERCEL_URL', () => 
   assert.match(html, /property="og:image" content="https:\/\/dramaforge\.example\/og-image\.png"/);
   assert.doesNotMatch(html, /random-preview\.vercel\.app/);
 });
+
+
+test('production deploy uses public canonical domain instead of deployment-specific VERCEL_URL', () => {
+  execFileSync(process.execPath, ['scripts/build.mjs'], {
+    cwd: root,
+    env: {
+      ...process.env, PUBLIC_SITE_URL: '', VERCEL_ENV: 'production',
+      VERCEL_URL: 'dramaforge-7zsr00dbr-private.vercel.app',
+    },
+    encoding: 'utf8',
+  });
+  const html = readFileSync(path.join(root, 'dist/index.html'), 'utf8');
+  assert.match(html, /property="og:url" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/"/);
+  assert.match(html, /rel="canonical" href="https:\/\/dramaforge-lemon-ten\.vercel\.app\/"/);
+  assert.match(html, /property="og:image" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png"/);
+  assert.match(html, /name="twitter:image" content="https:\/\/dramaforge-lemon-ten\.vercel\.app\/og-image\.png"/);
+  assert.doesNotMatch(html, /private\.vercel\.app/);
+});
+
+test('preview deploy continues to use its own preview URL, not production domain', () => {
+  execFileSync(process.execPath, ['scripts/build.mjs'], {
+    cwd: root,
+    env: {
+      ...process.env, PUBLIC_SITE_URL: '', VERCEL_ENV: 'preview',
+      VERCEL_URL: 'dramaforge-feature-123.vercel.app',
+    },
+    encoding: 'utf8',
+  });
+  const html = readFileSync(path.join(root, 'dist/index.html'), 'utf8');
+  assert.match(html, /property="og:image" content="https:\/\/dramaforge-feature-123\.vercel\.app\/og-image\.png"/);
+});
