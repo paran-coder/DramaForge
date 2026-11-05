@@ -14,7 +14,7 @@ test('static public Vercel config has no server backend and restricts local brid
  const config=JSON.parse(readFileSync(path.join(root,'vercel.json'),'utf8'));
  assert.equal(config.outputDirectory,'dist');
  assert.equal(config.buildCommand,'npm run build');
- const headers=config.headers[0].headers;const map=new Map(headers.map(x=>[x.key,x.value]));
+ const headers=config.headers.find(x=>x.source==='/(.*)').headers;const map=new Map(headers.map(x=>[x.key,x.value]));
  assert.match(map.get('Content-Security-Policy'),/http:\/\/127\.0\.0\.1:7331/);
  assert.doesNotMatch(map.get('Content-Security-Policy'),/unsafe-eval|unsafe-inline|\*;/);
  assert.match(map.get('Content-Security-Policy'),/frame-ancestors 'none'/);
@@ -32,7 +32,7 @@ test('public web origin is allowlisted; random sites cannot pair or issue shell 
  assert.equal((await send('/api/pair',{code:'fedcba9876543210'},'https://attacker.example')).status,403);
  const ok=await send('/api/pair',{code:'fedcba9876543210'},ORIGIN);
  assert.equal(ok.status,200);assert.equal(ok.headers.get('Access-Control-Allow-Origin'),ORIGIN);
- assert.equal(ok.body.version,'1.7.0');
+ assert.equal(ok.body.version,'1.7.1');
  assert.equal((await send('/api/jobs',{mode:'shots',prompt:'scene'},'https://attacker.example',ok.body.token)).status,403);
  assert.equal((await send('/api/jobs',{mode:'terminal',prompt:'rm -rf /'},ORIGIN,ok.body.token)).status,400);
  assert.equal((await send('/api/status',{},ORIGIN,ok.body.token)).status,200);

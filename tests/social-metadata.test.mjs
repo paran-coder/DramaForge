@@ -29,7 +29,7 @@ test('static HTML Vercel Analytics uses same-origin tracking script and no API k
   assert.match(readFileSync(path.join(root, 'web/analytics-init.js'), 'utf8'), /window\.va/);
   assert.doesNotMatch(source, /@vercel\/analytics\/(?:next|react)/);
   const config = JSON.parse(readFileSync(path.join(root, 'vercel.json'), 'utf8'));
-  const csp = config.headers[0].headers.find(item => item.key === 'Content-Security-Policy').value;
+  const csp = config.headers.find(x=>x.source==='/(.*)').headers.find(item => item.key === 'Content-Security-Policy').value;
   assert.match(csp, /script-src 'self'/);
   assert.match(csp, /connect-src 'self'/);
   assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);

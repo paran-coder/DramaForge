@@ -337,3 +337,10 @@ dialog code {color: var(--color-primary);}
 .imported-document-list{display:flex;flex-direction:column;gap:8px;max-height:180px;overflow:auto;margin-top:10px}
 .imported-document{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--color-border);padding:8px 12px;border-radius:6px;background:var(--color-surface);font-size:13px}
 .imported-document span{min-width:0;overflow-wrap:anywhere}
+
+/* v1.7.1 — The installer step is an in-context action, not a terminal tutorial. */
+.install-help[hidden]{display:none}
+.install-help h3{font-size:16px;font-weight:650;line-height:1.4;color:var(--color-heading);margin:0 0 8px}
+.install-help p{font-size:14px;line-height:1.6;color:var(--color-text)}
+.install-help #installConnectorBtn{min-height:44px;margin:4px 0 0}
+.install-help #installProgress{color:var(--color-muted-strong);margin:10px 0 0}

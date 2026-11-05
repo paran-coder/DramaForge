@@ -46,7 +46,7 @@ with sync_playwright() as pw:
     assert not page.locator('#startDialog').is_visible()
     page.screenshot(path=str(root/'docs/onboarding-desktop.png'),full_page=True)
     page.goto('https://dramaforge-lemon-ten.vercel.app/guide.html',wait_until='domcontentloaded')
-    assert 'ChatGPT Codex 연결' in page.locator('main').inner_text()
+    assert 'ChatGPT Codex 자동 설치' in page.locator('main').inner_text()
     page.set_viewport_size({'width':390,'height':844})
     page.wait_for_timeout(100)
     width=page.evaluate('document.documentElement.scrollWidth');assert width<=390,(width,390)

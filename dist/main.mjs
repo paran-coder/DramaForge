@@ -443,15 +443,36 @@ $('videoFile').onchange=async e=>{const file=e.target.files?.[0],shot=activeShot
 $('backupBtn').onclick=downloadBackup;
 $('folderBtn').onclick=async()=>{if(!window.showDirectoryPicker)return notice('이 브라우저는 폴더 저장을 지원하지 않습니다. ZIP 백업을 이용하세요.');try{backupHandle=await window.showDirectoryPicker({mode:'readwrite'});await writeFolderBackup(false);}catch(e){if(e.name!=='AbortError')notice('폴더 백업 실패: '+e.message);}};
 $('importFile').onchange=async e=>{try{const file=e.target.files?.[0];if(!file)return;if(file.size>120_000_000)throw new Error('백업 파일이 너무 큽니다.');const p=validateImportedProject(projectFromZip(await file.arrayBuffer()));await verifyCanonIntegrity(p);ensureGuards(p);if(projects.some(q=>q.id===p.id)){if(!confirm('동일한 작품이 이미 있습니다. 새 복사본으로 가져올까요?'))return;p.id=crypto.randomUUID();p.title+=' (복원)';}await flush();projects.unshift(p);project=p;selected=p.shots[0]?.id||null;resetWriterScope();await persist();render();notice('프로젝트 ZIP 복원 완료');}catch(err){notice('복원 실패: '+err.message);}finally{e.target.value='';}};
+let installPoll=null;
+let windowsSetup='/downloads/DramaForge-Setup-Windows.cmd';
+void fetch('/downloads/DramaForge-Setup-Windows.exe',{method:'HEAD'}).then(r=>{if(r.ok)windowsSetup='/downloads/DramaForge-Setup-Windows.exe';}).catch(()=>{});
+function installFileForPlatform(){
+ const platform=String(navigator.userAgentData?.platform||navigator.platform||navigator.userAgent||'').toLowerCase();
+ return /win/.test(platform)?windowsSetup:'/downloads/DramaForge-Setup-Unix.sh';
+}
+function stopInstallWatch(){if(installPoll!==null){clearInterval(installPoll);installPoll=null;}}
+function watchInstallation(){
+ stopInstallWatch();let checks=0;
+ installPoll=setInterval(async()=>{
+  if(bridge.token){stopInstallWatch();return;}
+  if(++checks>120){stopInstallWatch();$('installProgress').textContent='아직 연결되지 않았습니다. 설치 파일 실행 상태를 확인한 뒤 자동 연결을 다시 누르세요.';return;}
+  try{await bridge.connect();stopInstallWatch();$('installProgress').textContent='연결 도우미가 실행되었습니다.';await checkStatus();$('connectBtn').textContent='◉ 연결됨';$('firstInstallHelp').hidden=true;}catch{}
+ },2000);
+}
+$('installConnectorBtn').onclick=()=>{
+ const url=installFileForPlatform();const a=document.createElement('a');a.href=url;a.download=url.split('/').pop();document.body.append(a);a.click();a.remove();
+ $('installProgress').textContent=/Windows/i.test(url)?'다운로드된 Windows 설치 파일을 한 번 실행하고 보안 확인을 승인하세요. Node.js·Codex 및 연결 프로그램 설치가 자동 진행됩니다.':'다운로드된 macOS/Linux 설치 스크립트를 사용자 동의 아래 실행하세요. 필수 구성요소가 자동 준비됩니다.';
+ watchInstallation();
+};
 async function autoConnect({silent=false}={}){
  $('connectionStatus').textContent='로컬 연결 프로그램 확인 중…';
  try{
   await bridge.connect();$('connectBtn').textContent='◉ 연결됨';
-  await checkStatus();$('firstInstallHelp').open=false;
+  await checkStatus();$('firstInstallHelp').hidden=true;stopInstallWatch();
   if(!silent)notice('로컬 Codex 브리지에 연결되었습니다.');
   return true;
  }catch(e){
-  if(!silent){$('connectionStatus').textContent='연결 프로그램이 실행 중이지 않습니다. 최초 설치가 필요한 경우 아래 안내를 확인하세요.';$('firstInstallHelp').open=true;}
+  if(!silent){$('connectionStatus').textContent='연결 프로그램이 없습니다. 아래의 설치 시작 버튼으로 구성요소를 자동 설치할 수 있습니다.';$('firstInstallHelp').hidden=false;}
   else $('connectionStatus').textContent='연결 전';
   return false;
  }

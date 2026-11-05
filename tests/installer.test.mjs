@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync,statSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const read=p=>readFileSync(path.join(root,p),'utf8');
+test('installer UX provides one setup action, not manual zip/node/codex steps',()=>{
+ const html=read('web/index.html');
+ assert.match(html,/id="installConnectorBtn"/);
+ assert.match(html,/id="installProgress"[^>]*role="status"/);
+ assert.doesNotMatch(html,/<ol class="connector-steps">/);
+ const main=read('web/main.mjs');
+ assert.match(main,/DramaForge-Setup-Windows\.cmd/);
+ assert.match(main,/DramaForge-Setup-Unix\.sh/);
+ assert.match(main,/watchInstallation\(\)/);
+ assert.match(main,/await bridge\.connect\(\)/);
+});
+test('downloaded installer references the exact checksum of bundled bridge',()=>{
+ const zip=readFileSync(path.join(root,'web/downloads/DramaForge-Connector-v1.7.1.zip'));
+ assert.equal(zip.toString('ascii',0,2),'PK');
+ const digest=createHash('sha256').update(zip).digest('hex');
+ assert.ok(zip.length>3000);
+ assert.match(read('web/downloads/DramaForge-Setup-Windows.cmd'),new RegExp(digest));
+ assert.match(read('web/downloads/DramaForge-Setup-Unix.sh'),new RegExp(digest));
+});
+test('installers use official sources, local user install, startup and loopback',()=>{
+ const windows=read('installer/install-windows.ps1'),unix=read('installer/install-unix.sh');
+ assert.match(windows,/nodejs\.org\/dist\/v24\.14\.1/);
+ assert.match(windows,/github\.com\/openai\/codex\/releases/);
+ assert.match(windows,/Get-FileHash/);
+ assert.match(windows,/LOCALAPPDATA/);
+ assert.match(windows,/HKCU:/);
+ assert.match(windows,/127\.0\.0\.1/);
+ assert.doesNotMatch(windows,/Start-Process\s+.*-Verb\s+RunAs/i);
+ assert.match(unix,/nodejs\.org\/dist/);
+ assert.match(unix,/@openai\/codex@/);
+ assert.match(unix,/LaunchAgents|autostart/);
+ assert.ok(statSync(path.join(root,'web/downloads/DramaForge-Setup-Windows.cmd')).size>4000);
+});

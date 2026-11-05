@@ -35,7 +35,7 @@
 - [ ] 공개 HTML의 OG/Twitter 태그 및 이미지 HTTP 응답 확인
 - [ ] Vercel Analytics 활성화와 실제 페이지뷰 발생 검증
 
-## v1.7.0 UI + onboarding + bridge integration
+## v1.7.1 UI + onboarding + bridge integration
 - [x] Two-mode onboarding, with explicit completion and reusable new-project entry
 - [x] Multiple text material import without changing approved canon
 - [x] Interview mode and free conversation guidance
@@ -47,3 +47,14 @@
 - [x] Build and archive verified, no production deployment performed
 - [ ] Live browser IndexedDB persistence and actual Codex authentication verified
 - [ ] Vercel preview release confirmed
+
+
+## v1.7.1 최초 연결 개선
+
+- [x] 설치 안내의 수동 ZIP/Node.js/Codex 설치 절차를 사용자 화면에서 제거
+- [x] Windows 및 Unix 사용자 영역 설치 도우미 생성, SHA-256 검증
+- [x] 설치 파일 다운로드·자동 재연결 기능 구현
+- [x] 코드 및 빌드 검사
+- [ ] Windows/macOS/Linux 실제 설치·로그인·재부팅 후 자동 실행 테스트
+- [ ] Windows/macOS 코드 서명된 네이티브 배포 패키지
+- [ ] Vercel 운영 배포·다운로드·로그인 실제 검증

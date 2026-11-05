@@ -40,9 +40,14 @@
 - API 권한으로 배포 READY 확인, 실제 HTML 조회는 Vercel 연결 권한 거부로 미검증.
 - 정설·시나리오·브리지 기능은 수정하지 않음.
 
-## v1.7.0 approved scope (2026-11-05)
+## v1.7.1 approved scope (2026-11-05)
 - Author-approved two entry paths: co-create a new project via interview/free dialogue, or import multiple existing planning documents.
 - Add a first-party How to Use page.
 - Replace typed local bridge pairing code with origin-approved automatic connection. Preserve exact Origin, loopback binding, host validation and bearer auth for all AI actions.
 - Browser cannot silently install native executables. Preserve user consent for first-time local helper installation; do not claim fully automatic native install.
 - Existing canon/approved decisions are immutable without author approval. Keep all existing local-first storage/backup functionality.
+
+
+## v1.7.1 범위 변경 및 기술 판단
+
+사용자는 기존 안내 화면의 압축 해제, Node 설치, Codex 설치, 명령 실행을 직접 하지 않는 최초 설치 자동화를 요구했습니다. 브라우저 보안상 무동의 자동 네이티브 설치는 허용되지 않으므로, 한 번 설치 파일을 실행·승인하면 공식 Node/Codex를 자동 설치하는 per-user bootstrap으로 구현했습니다. 기존 AI 인증/데이터 처리/정설 보호는 변경하지 않았습니다. `.cmd`/`.sh` 설치 파일은 코드 서명된 네이티브 인스톨러가 아니며 실제 운영체제 테스트가 필요합니다.

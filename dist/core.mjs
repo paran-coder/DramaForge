@@ -1,7 +1,7 @@
 import {normalizeAIGuardClaims,assertShotGuardReady} from './guards.mjs';
 import {ensureSeries,seriesSignature,assertEpisodeForShot} from './series.mjs';
 import {ensureNarrative} from './narrative.mjs';
-export const VERSION='1.7.0';
+export const VERSION='1.7.1';
 export const SHOT_STATES=Object.freeze(['draft','needs_review','approved']);
 export function uid(prefix='id') {return `${prefix}_${crypto.randomUUID()}`;}
 export function newProject(title='새 작품') {return {schemaVersion:2,canon:{schemaVersion:1,decisions:[],changes:[],branches:[],audit:[]},planning:{schemaVersion:1,messages:[],reviews:[],audit:[]},series:{schemaVersion:1,workflow:'outline_first',outline:'',episodes:[],records:[],changes:[],audit:[]},narrative:{schemaVersion:1,records:[],changes:[],audit:[],reviews:[]},id:uid('project'),title,script:'',visualBible:'',shots:[],history:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),revision:0};}
