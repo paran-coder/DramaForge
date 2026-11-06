@@ -356,4 +356,6 @@ dialog code {color: var(--color-primary);}
 
 #projectWorkspace[hidden], #emptyWorkspace[hidden], #deleteProjectBtn[hidden] {display:none;}
 #deleteProjectBtn {align-self:flex-start;margin:8px 0;}
-.planning-message-delete {float:right;}
+.planning-message-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;}
+.planning-message-delete {flex:none;}
+.planning-message-body {overflow-wrap:anywhere;}

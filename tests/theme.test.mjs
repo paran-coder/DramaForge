@@ -24,7 +24,7 @@ const contrast=(a,b)=>{
 
 test('theme is layered after the unchanged base stylesheet',()=>{
  assert.match(html,/<link rel="stylesheet" href="\/styles\.css">\s*<link rel="stylesheet" href="\/theme\.css">/);
- assert.match(html,/PROJECT WORKSPACE \/ v1\.9\.8/);
+ assert.match(html,/PROJECT WORKSPACE \/ v1\.9\.9/);
 });
 test('brand tokens match supplied palette and CTA contrast is AA',()=>{
  assert.equal(hex('--color-primary'),'#fcd535');

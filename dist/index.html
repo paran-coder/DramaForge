@@ -6,12 +6,14 @@
   <meta name="theme-color" content="#0b0e11">
   <title>DramaForge · AI 드라마 기획과 정설 관리</title>
   <meta name="description" content="DramaForge는 드라마 대본 기획, 확정 정설 보호, 인물과 사건의 연속성 검증, 스토리보드와 영상 프롬프트 제작을 돕는 브라우저 기반 작업 공간입니다.">
+  <meta property="og:url" content="https://dramaforge-feature-123.vercel.app/">
+  <link rel="canonical" href="https://dramaforge-feature-123.vercel.app/">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="ko_KR">
   <meta property="og:site_name" content="DramaForge">
   <meta property="og:title" content="DramaForge | AI 드라마 기획 · 정설 관리 · 연속성 검증">
   <meta property="og:description" content="AI와 함께 기획하면서도 작가가 확정한 설정은 지키세요. 대본, 세계관, 사건 연표, 연속성 검증을 하나의 작업 공간에서 관리합니다.">
-  <meta property="og:image" content="/og-image.png">
+  <meta property="og:image" content="https://dramaforge-feature-123.vercel.app/og-image.png">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
@@ -19,7 +21,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="DramaForge | AI 드라마 기획 · 정설 관리 · 연속성 검증">
   <meta name="twitter:description" content="대본·정설·연속성 검증을 하나의 작업 공간에서 관리하는 AI 드라마 제작 도구">
-  <meta name="twitter:image" content="/og-image.png">
+  <meta name="twitter:image" content="https://dramaforge-feature-123.vercel.app/og-image.png">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/theme.css">
   <!-- 정적 HTML 앱: Vercel 프로젝트에서 Web Analytics를 Enable한 다음 배포하면 통계 수집 시작 -->
@@ -29,7 +31,7 @@
 <body>
 <div class="app"><header class="topbar"><div class="brand"><span class="brand-mark">DF</span><div><strong>DramaForge</strong><span>AI DRAMA PRODUCTION</span></div></div><div class="top-actions"><span id="saveState" class="muted tiny">로컬 저장 준비</span><button id="backupBtn" class="btn ghost">ZIP 백업</button><button id="folderBtn" class="btn ghost">백업 폴더</button><a class="btn ghost" href="/guide.html" aria-label="DramaForge 사용방법 열기">사용방법</a><button id="connectBtn" class="btn primary">◉ AI 연결</button></div></header>
 <div class="layout"><aside class="sidebar"><div class="section-head"><span>작품 보관함</span><button id="newProjectBtn" class="icon-btn" title="작품 추가" aria-label="새 작품">＋</button></div><div id="projectList" class="project-list"></div><button id="deleteProjectBtn" class="btn ghost small" type="button" hidden>선택한 작품 삭제</button><div class="sidebar-bottom"><p><b>사용자 작품은 이 브라우저에 저장됩니다. 공용 PC에서는 저장·백업에 주의하세요.</b></p><p>AI 요청 시 제공한 대본과 참조 자산은 로컬 Codex를 통해 OpenAI로 전송됩니다. Vercel은 내용을 저장하지 않습니다.</p><p>Vercel Web Analytics가 켜지면 방문·페이지 조회 통계만 전송됩니다. 대본과 작품 데이터는 분석 이벤트에 포함하지 않습니다.</p><label class="btn ghost block" for="importFile">ZIP 복원</label><input type="file" id="importFile" accept=".zip" hidden></div></aside>
-<main class="workspace" id="projectWorkspace"><div class="heading"><div><span class="eyebrow">PROJECT WORKSPACE / v1.9.8</span><div class="project-title-row"><h1 id="projectHeading">작품 불러오는 중</h1><button id="renameProjectBtn" class="btn ghost small" type="button">이름 변경</button></div><p id="subtitle">대본부터 제작 프롬프트까지 하나의 작업 공간에서 관리합니다.</p></div><span class="local-pill">● LOCAL FIRST</span></div><nav class="workspace-tabs" aria-label="작업 공간"><button id="writerTab" class="btn primary" aria-pressed="true">기획 · AI 대화</button><button id="episodeTab" class="btn ghost" aria-pressed="false">회차 · 연속성</button><button id="productionTab" class="btn ghost" aria-pressed="false">영상 제작</button><button id="canonTab" class="btn ghost" aria-pressed="false">정설 · 결정 관리</button><span id="canonSummary" class="tab-summary">정설 확인 중</span></nav>
+<main class="workspace" id="projectWorkspace"><div class="heading"><div><span class="eyebrow">PROJECT WORKSPACE / v1.9.9</span><div class="project-title-row"><h1 id="projectHeading">작품 불러오는 중</h1><button id="renameProjectBtn" class="btn ghost small" type="button">이름 변경</button></div><p id="subtitle">대본부터 제작 프롬프트까지 하나의 작업 공간에서 관리합니다.</p></div><span class="local-pill">● LOCAL FIRST</span></div><nav class="workspace-tabs" aria-label="작업 공간"><button id="writerTab" class="btn primary" aria-pressed="true">기획 · AI 대화</button><button id="episodeTab" class="btn ghost" aria-pressed="false">회차 · 연속성</button><button id="productionTab" class="btn ghost" aria-pressed="false">영상 제작</button><button id="canonTab" class="btn ghost" aria-pressed="false">정설 · 결정 관리</button><span id="canonSummary" class="tab-summary">정설 확인 중</span></nav>
 <section id="writerWorkspace" class="writer-columns" aria-label="대본과 AI 기획 대화">
  <div class="writer-main">
   <div class="entry-banner" id="entryBanner"><div><strong id="entryLabel">작품 시작 방식</strong><p id="importSummary">AI와 새 작품을 기획하거나 기존 기획을 참고 자료로 불러올 수 있습니다.</p></div><button id="startModeBtn" class="btn ghost small" type="button">시작 방식 · 자료 관리</button></div>
@@ -39,11 +41,11 @@
    <textarea id="writerScriptInput" class="writer-script-editor" placeholder="장면과 대사를 작성하세요. 승인된 설정은 자동 변경되지 않습니다."></textarea><span class="count" id="writerScriptLength">0자</span>
    <p class="help-text">AI가 만든 제안은 승인된 정설이 아닙니다. 작가가 별도로 승인해야 합니다.</p></div>
   </section>
-  <section class="panel writer-chat-panel"><div class="panel-head"><div><span class="step">02 / PLANNING CONVERSATION</span><h2>작가 · AI 기획 대화</h2></div><span id="reviewStatus" class="count">검토 전</span></div>
+  <section class="panel writer-chat-panel"><div class="panel-head"><div><span class="step">02 / PLANNING CONVERSATION</span><h2>작가 · AI 기획 대화</h2></div><span id="planningChatStatus" class="count" role="status">답변 대기</span></div>
    <div id="planningMessages" class="planning-messages" aria-live="polite"><p class="empty">기획 의견을 기록하거나 AI와 함께 검토해 보세요.</p></div>
    <label class="field-label" for="planningInput">새 기획 의견 / 질문</label>
    <textarea id="planningInput" class="planning-composer" placeholder="예: 주인공은 3화까지 범인의 정체를 모른다. 이미 정한 설정과 충돌하는지 확인해 주세요."></textarea>
-   <div class="actions wrap-actions"><button id="reviewPlanningBtn" class="btn primary" type="button">AI 답변 받기</button><button id="recordPlanningBtn" class="btn ghost" type="button">기록만 저장</button><button id="reviewCanonPlanningBtn" class="btn ghost" type="button">정설·충돌 검토</button></div>
+   <div class="actions wrap-actions"><button id="reviewPlanningBtn" class="btn primary" type="button">AI 답변 받기</button><button id="recordPlanningBtn" class="btn ghost" type="button">기록만 저장</button><button id="reviewCanonPlanningBtn" class="btn ghost" type="button">정설·충돌 검토</button><span id="reviewStatus" class="count">정설 검토 전</span></div>
    <p id="planningReplyStatus" class="field-note" role="status"></p>
    <p class="help-text">AI 요청 시 대본, 관련 정설, 최근 기획 대화가 로컬 Codex 브리지를 통해 OpenAI에 전송될 수 있습니다.</p>
   </section>

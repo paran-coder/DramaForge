@@ -125,6 +125,7 @@ $('canonTab').onclick=()=>showWorkspace('canon');
 $('writerOpenCanonBtn').onclick=()=>showWorkspace('canon');
 const scriptPanelOpen=new WeakMap();
 const planningFeedback=new WeakMap();
+const planningChatState=new WeakMap();
 function renderWriterScriptPanel(){
  const open=scriptPanelOpen.get(project)??project.onboarding?.mode!=='co-create';
  $('writerScriptBody').hidden=!open;
@@ -140,9 +141,20 @@ function setPlanningFeedback(current,message){
  planningFeedback.set(current,message);
  if(project===current)$('planningReplyStatus').textContent=message;
 }
+function setPlanningChatState(current,state){
+ if(state)planningChatState.set(current,state);
+ else planningChatState.delete(current);
+ if(project===current)renderPlanningChatStatus();
+}
+function renderPlanningChatStatus(){
+ const lastMessage=project.planning.messages.at(-1);
+ $('planningChatStatus').textContent=planningChatState.get(project)||
+  (lastMessage?.role==='assistant'?'답변 완료':'답변 대기');
+}
 function renderWriter(){
  if(!project)return;ensurePlanning(project);
  renderWriterScriptPanel();
+ renderPlanningChatStatus();
  $('planningReplyStatus').textContent=planningFeedback.get(project)||'';
  const scope=$('writerScopeSelect');scope.replaceChildren();const globalOption=uiEl('option','','작품 전체 · 공통 대본');globalOption.value='global';scope.append(globalOption);for(const ep of project.series.episodes){const opt=uiEl('option','',`${ep.number}화 · ${ep.title}`);opt.value=String(ep.number);scope.append(opt);}if(writerScope!=='global'&&!project.series.episodes.some(e=>String(e.number)===writerScope))writerScope='global';scope.value=writerScope;
  const workingScript=writerScope==='global'?project.script:(project.series.episodes.find(e=>String(e.number)===writerScope)?.script||'');
@@ -153,7 +165,8 @@ function renderWriter(){
  if(!project.planning.messages.length)messages.append(uiEl('p','empty','아이디어나 질문을 입력하고 AI 답변 받기를 누르세요.'));
  for(const msg of project.planning.messages.slice(-55)){
   const el=uiEl('article',`planning-message ${msg.role==='assistant'?'assistant':''}`);
-  el.append(uiEl('span','who',msg.role==='author'?'작가':'Codex · 기획 답변'));
+  const header=uiEl('div','planning-message-head');
+  header.append(uiEl('span','who',msg.role==='author'?'작가':'Codex · 기획 답변'));
   const remove=uiButton('삭제',async()=>{
    if(busy||!confirm('이 대화 메시지를 삭제할까요?'))return;
    const current=project;
@@ -164,6 +177,8 @@ function renderWriter(){
    try{
     await persist(changed);
     current.planning=changed.planning;
+    setPlanningChatState(current);
+    setPlanningFeedback(current,'');
     current.updatedAt=changed.updatedAt;
     current.revision=changed.revision;
     if(project===current){renderWriter();projectList();}
@@ -174,7 +189,8 @@ function renderWriter(){
   });
   remove.classList.add('planning-message-delete');
   remove.setAttribute('aria-label',msg.role==='author'?'작가 메시지 삭제':'AI 답변 삭제');
-  el.append(remove,uiEl('div','',msg.content));messages.append(el);
+  header.append(remove);
+  el.append(header,uiEl('div','planning-message-body',msg.content));messages.append(el);
  }
  messages.scrollTop=messages.scrollHeight;
  const canon=$('writerCanonList');canon.replaceChildren();
@@ -184,7 +200,7 @@ function renderWriter(){
   const item=uiEl('article','writer-item');item.append(uiEl('strong','',`${d.title} · v${d.version}`),uiEl('div','',d.statement));canon.append(item);
  }
  const review=project.planning.reviews.at(-1),issues=$('planningIssueList');issues.replaceChildren();
- $('reviewStatus').textContent=!review?'AI 검토 전':reviewIsCurrent(project,review)?`현재 검토 · ${review.issues.length}건`:'오래된 검토 · 재실행 필요';
+ $('reviewStatus').textContent=!review?'정설 검토 전':reviewIsCurrent(project,review)?`정설 검토 완료 · ${review.issues.length}건`:'정설 재검토 필요';
  if(!review){issues.append(uiEl('p','empty','AI 기획 검토를 실행하면 이전 기각·승인 결정과의 중복, 캐릭터·연표·복선 위험을 여기서 확인합니다.'));return;}
  if(!review.issues.length)issues.append(uiEl('p','empty','이번 분석에서 보고한 의심 항목이 없습니다. 모든 모순이 없다는 의미는 아닙니다.'));
  if(!reviewIsCurrent(project,review))issues.append(uiEl('p','help-text','대본·대화·정설이 변경되었습니다. 기존 검토 결과는 참고용이며 다시 검토해야 합니다.'));
@@ -240,7 +256,7 @@ $('localRiskFilter').onchange=renderLocalRisks;
 $('aiIssueFilter').onchange=()=>{if(project)renderWriter();};
 $('planningInput').addEventListener('input',scheduleLocalRisks);
 async function recordPlanning(){
- try{recordAuthorMessage(project,$('planningInput').value);$('planningInput').value='';await flush();renderWriter();}
+ try{recordAuthorMessage(project,$('planningInput').value);setPlanningChatState(project);setPlanningFeedback(project,'');$('planningInput').value='';await flush();renderWriter();}
  catch(e){notice(e.message);}
 }
 async function requestPlanningReply({review=false}={}){
@@ -254,6 +270,7 @@ async function requestPlanningReply({review=false}={}){
   return;
  }
  setBusy(true);
+ if(!review)setPlanningChatState(current,'답변 작성 중');
  try{
   if(input){
    recordAuthorMessage(current,input);
@@ -262,7 +279,9 @@ async function requestPlanningReply({review=false}={}){
    if(project===current)renderWriter();
   }
   if(!bridge.token){
-   setPlanningFeedback(current,'질문을 저장했습니다. PC 연결과 ChatGPT 로그인을 마친 뒤 AI 답변 받기를 다시 누르세요.');
+   if(!review)setPlanningChatState(current,'AI 연결 필요');
+   const action=review?'정설·충돌 검토':'AI 답변 받기';
+   setPlanningFeedback(current,`PC 연결과 ChatGPT 로그인을 마친 뒤 ${action}를 다시 누르세요.`);
    if(project===current)void $('connectBtn').onclick();
    return;
   }
@@ -275,10 +294,12 @@ async function requestPlanningReply({review=false}={}){
   const assessment=review?applyPlanningResult(current,result.text,{expectedSignature:signature}):null;
   if(!review)applyPlanningConversationReply(current,result.text);
   await persist(current);
+  setPlanningChatState(current);
   setPlanningFeedback(current,assessment?`검토 완료 · 검토 사항 ${assessment.issues.length}건 · 정설 후보 ${assessment.importedCandidateIds.length}건`:'답변 완료');
   if(project===current){renderWriter();renderCanon();}
  }catch(e){
   const action=review?'정설·충돌 검토':'AI 답변 받기';
+  if(!review)setPlanningChatState(current,/로그인/.test(e.message)?'로그인 필요':/로컬 연결 앱|연결 승인이 필요|인증/.test(e.message)?'AI 연결 필요':'답변 실패');
   setPlanningFeedback(current,'AI 요청 실패. '+connectionErrorMessage(e)+' 해결한 뒤 '+action+'를 다시 누르세요.');
   if(project===current&&/로그인|연결 승인이 필요|인증/.test(e.message)&&!$('connectDialog').open)void $('connectBtn').onclick();
   if(project===current)renderWriter();
