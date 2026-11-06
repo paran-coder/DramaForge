@@ -357,5 +357,23 @@ dialog code {color: var(--color-primary);}
 #projectWorkspace[hidden], #emptyWorkspace[hidden], #deleteProjectBtn[hidden] {display:none;}
 #deleteProjectBtn {align-self:flex-start;margin:8px 0;}
 .planning-message-head {display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px;}
-.planning-message-delete {flex:none;}
+.planning-message-head .planning-message-delete {
+  flex: none;
+  min-height: 28px;
+  padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 500;
+}
+.planning-message-head .planning-message-delete:hover:not(:disabled) {
+  background: transparent;
+  color: var(--color-text);
+  text-decoration: underline;
+}
+.planning-message-head .planning-message-delete:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
 .planning-message-body {overflow-wrap:anywhere;}
