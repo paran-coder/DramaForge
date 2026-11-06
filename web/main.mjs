@@ -7,7 +7,7 @@ import {initNarrativeUI} from './narrative-ui.mjs';
 import {ensureSeries,setWorkflow,editOutline,createEpisode,editEpisode,createSeriesRecord,decideSeriesRecord,proposeSeriesChange,resolveSeriesChange,linkShotEpisode,episodeState,inspectEpisode,seriesPromptContext} from './series.mjs';
 import {projectToZip,projectFromZip} from './zip.mjs';
 import {BridgeClient} from './bridge-client.mjs';
-import {startProject,needsOnboarding,addImportedMaterials,removeImportedMaterial,importedPlanningContext,INTERVIEW_SEED} from './onboarding.mjs';
+import {startProject,needsOnboarding,addImportedMaterials,removeImportedMaterial,importedPlanningContext} from './onboarding.mjs';
 import {ensureGuards,addGuardRule,activeRules,staleRules,addShotClaim,removeShotClaim,inspectShot,attestShotReview,assertShotGuardReady,inspectProposal} from './guards.mjs';
 import {ensureCanon,createCanonCandidate,decideCanonCandidate,reopenDeferredDecision,requestReconsideration,requestCanonChange,resolveCanonChange,calculateChangeImpact,addShotDependency,linkShotToCanon,createWhatIfBranch,addWhatIfIdea,proposeWhatIfToMain,buildDirectorPrompt,activeCanonContext,verifyCanonIntegrity,parseDecisionProposals} from './canon.mjs';
 const $=id=>document.getElementById(id),bridge=new BridgeClient();
@@ -108,18 +108,37 @@ $('openEpisodeBtn').onclick=()=>showWorkspace('episode');
 $('productionTab').onclick=()=>showWorkspace('production');
 $('canonTab').onclick=()=>showWorkspace('canon');
 $('writerOpenCanonBtn').onclick=()=>showWorkspace('canon');
+const scriptPanelOpen=new WeakMap();
+const planningFeedback=new WeakMap();
+function renderWriterScriptPanel(){
+ const open=scriptPanelOpen.get(project)??project.onboarding?.mode!=='co-create';
+ $('writerScriptBody').hidden=!open;
+ $('toggleWriterScriptBtn').setAttribute('aria-expanded',String(open));
+ $('toggleWriterScriptBtn').textContent=open?'대본 편집 접기':'대본 편집 열기';
+}
+$('toggleWriterScriptBtn').onclick=()=>{
+ if(!project)return;
+ scriptPanelOpen.set(project,$('writerScriptBody').hidden);
+ renderWriterScriptPanel();
+};
+function setPlanningFeedback(current,message){
+ planningFeedback.set(current,message);
+ if(project===current)$('planningReplyStatus').textContent=message;
+}
 function renderWriter(){
  if(!project)return;ensurePlanning(project);
+ renderWriterScriptPanel();
+ $('planningReplyStatus').textContent=planningFeedback.get(project)||'';
  const scope=$('writerScopeSelect');scope.replaceChildren();const globalOption=uiEl('option','','작품 전체 · 공통 대본');globalOption.value='global';scope.append(globalOption);for(const ep of project.series.episodes){const opt=uiEl('option','',`${ep.number}화 · ${ep.title}`);opt.value=String(ep.number);scope.append(opt);}if(writerScope!=='global'&&!project.series.episodes.some(e=>String(e.number)===writerScope))writerScope='global';scope.value=writerScope;
  const workingScript=writerScope==='global'?project.script:(project.series.episodes.find(e=>String(e.number)===writerScope)?.script||'');
  $('writerScriptInput').value=workingScript;
  $('writerScriptLength').textContent=`${workingScript.length.toLocaleString()}자`;
  renderLiveContinuity();renderLocalRisks();
  const messages=$('planningMessages');messages.replaceChildren();
- if(!project.planning.messages.length)messages.append(uiEl('p','empty','기획 메시지를 기록하면 대화와 검토 이력이 여기에 표시됩니다.'));
+ if(!project.planning.messages.length)messages.append(uiEl('p','empty','아이디어나 질문을 입력하고 AI 답변 받기를 누르세요.'));
  for(const msg of project.planning.messages.slice(-55)){
   const el=uiEl('article',`planning-message ${msg.role==='assistant'?'assistant':''}`);
-  el.append(uiEl('span','who',msg.role==='author'?'작가':'Codex · 검토 제안'));
+  el.append(uiEl('span','who',msg.role==='author'?'작가':'Codex · 기획 답변'));
   el.append(uiEl('div','',msg.content));messages.append(el);
  }
  messages.scrollTop=messages.scrollHeight;
@@ -190,16 +209,47 @@ async function recordPlanning(){
  catch(e){notice(e.message);}
 }
 async function aiPlanningReview(){
- if(!bridge.token){$('connectDialog').showModal();return;}
- setBusy(true);try{
-  const input=$('planningInput').value.trim();if(input){recordAuthorMessage(project,input);$('planningInput').value='';await flush();}
-  const signature=planningSignature(project);const prompt=buildPlanningPrompt(project,{episodeNumber:writerScope==='global'?null:Number(writerScope)});
+ if(!project||busy)return;
+ const current=project;
+ const episodeNumber=writerScope==='global'?null:Number(writerScope);
+ const input=$('planningInput').value.trim();
+ if(!input&&!current.planning.messages.some(message=>message.role==='author')){
+  setPlanningFeedback(current,'아이디어나 질문을 먼저 입력하세요.');
+  $('planningInput').focus();
+  return;
+ }
+ setBusy(true);
+ try{
+  if(input){
+   recordAuthorMessage(current,input);
+   $('planningInput').value='';
+   await flush();
+   if(project===current)renderWriter();
+  }
+  if(!bridge.token){
+   setPlanningFeedback(current,'질문을 저장했습니다. PC 연결과 ChatGPT 로그인을 마친 뒤 AI 답변 받기를 다시 누르세요.');
+   if(project===current)void $('connectBtn').onclick();
+   return;
+  }
+  setPlanningFeedback(current,'PC 연결과 ChatGPT 로그인 상태 확인 중…');
+  const status=await bridge.status();
+  if(!status.account){
+   setPlanningFeedback(current,'질문을 저장했습니다. ChatGPT에 로그인한 뒤 AI 답변 받기를 다시 누르세요.');
+   if(project===current)void $('connectBtn').onclick();
+   return;
+  }
+  const signature=planningSignature(current);
+  const prompt=buildPlanningPrompt(current,{episodeNumber});
+  setPlanningFeedback(current,'Codex가 답변을 작성 중입니다…');
   const result=await bridge.job('review',prompt);
-  const review=applyPlanningResult(project,result.text,{expectedSignature:signature});
-  await flush();renderWriter();renderCanon();
-  notice(`AI 검토: 의심 사항 ${review.issues.length}건 · 후보 ${review.importedCandidateIds.length}건. 작가 승인이 필요합니다.`);
- }catch(e){notice('기획 검토 실패: '+e.message);renderWriter();}
- finally{setBusy(false);}
+  const review=applyPlanningResult(current,result.text,{expectedSignature:signature});
+  await persist(current);
+  setPlanningFeedback(current,`답변 완료 · 검토 사항 ${review.issues.length}건 · 정설 후보 ${review.importedCandidateIds.length}건`);
+  if(project===current){renderWriter();renderCanon();}
+ }catch(e){
+  setPlanningFeedback(current,'AI 답변 실패. '+connectionErrorMessage(e)+' 해결한 뒤 AI 답변 받기를 다시 누르세요.');
+  if(project===current)renderWriter();
+ }finally{setBusy(false);}
 }
 $('recordPlanningBtn').onclick=recordPlanning;
 $('reviewPlanningBtn').onclick=aiPlanningReview;
@@ -402,7 +452,11 @@ $('writerScopeSelect').onchange=e=>{writerScope=e.target.value;if(writerScope!==
 $('writerScriptInput').oninput=e=>{if(writerScope==='global')updateScript(e.target.value,'writer');else{const n=Number(writerScope);editEpisode(project,n,{script:e.target.value});$('writerScriptLength').textContent=`${e.target.value.length.toLocaleString()}자`;scheduleSave();renderShots();$('reviewStatus').textContent='회차 원고 수정 · AI 재검토 필요';renderLiveContinuity();narrativeUI?.render();scheduleLocalRisks();}};
 $('bibleInput').oninput=e=>{if(project.visualBible!==e.target.value){project.visualBible=e.target.value;invalidateApprovals(project,'비주얼 바이블 수정');scheduleSave();renderShots();$('reviewStatus').textContent='기획 기준 변경 · AI 재검토 필요';}};
 $('addShotDependencyBtn').onclick=async()=>{const shot=activeShot();if(!shot)return;const candidates=project.shots.filter(x=>x.id!==shot.id);if(!candidates.length)return notice('선행 샷이 없습니다.');const options=candidates.map((x,i)=>`${i+1}. ${x.scene} / ${x.title}`).join('\n');const value=window.prompt(`의존할 선행 샷 번호를 입력하세요.\n${options}`);if(value===null)return;const index=Number(value)-1;if(!Number.isInteger(index)||!candidates[index])return notice('올바른 번호를 입력하세요.');try{addShotDependency(project,shot.id,candidates[index].id);await flush();renderDetail();notice('선행 샷 의존성을 등록했습니다. 정설 변경 시 후속 샷까지 영향 범위를 추적합니다.');}catch(e){notice(e.message);}};
-function showEntry(){if(!$('startDialog').open)$('startDialog').showModal();}
+function showEntry(){
+ if($('startDialog').open)return;
+ $('planningImportOptions').hidden=!(project?.importedMaterials?.length||project?.onboarding?.mode==='import');
+ $('startDialog').showModal();
+}
 function renderEntry(){
  if(!project)return;
  const mode=project.onboarding?.mode;
@@ -423,13 +477,13 @@ $('startModeBtn').onclick=showEntry;
 $('closeStartDialogBtn').onclick=()=>$('startDialog').close();
 $('coCreateBtn').onclick=async()=>{
  startProject(project,'co-create',{conversationStyle:$('conversationMode').value});
+ scriptPanelOpen.set(project,false);
  await flush();renderEntry();$('startDialog').close();showWorkspace('writer');
- if(!$('planningInput').value.trim() && project.planning.messages.length===0)$('planningInput').value=INTERVIEW_SEED+'\n아이디어: ';
- $('planningInput').focus();notice('공동 기획을 시작합니다. 아이디어를 입력한 후 AI 기획 검토를 실행하세요.');
+ $('planningInput').focus();notice('아이디어를 입력하고 AI 답변 받기를 누르세요.');
 };
-$('importModeBtn').onclick=async()=>{
- startProject(project,'import',{conversationStyle:$('conversationMode').value});
- await flush();renderEntry();$('planningFiles').click();
+$('importModeBtn').onclick=()=>{
+ $('planningImportOptions').hidden=false;
+ $('planningFiles').click();
 };
 $('planningFiles').onchange=async e=>{
  const files=[...(e.target.files||[])];if(!files.length)return;

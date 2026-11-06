@@ -90,3 +90,12 @@ test('AI cannot auto-add a candidate without a verifiable quote from the script 
  assert.equal(result.importedCandidateIds.length,0);assert.equal(result.skippedCandidates.length,1);
  assert.equal(p.canon.decisions.length,0);
 });
+test('planning prompt answers the latest saved question in context of the previous AI reply',()=>{
+ const p=project();
+ recordAuthorMessage(p,'조선 시대 트로트 가수 이야기를 기획합니다.');
+ applyPlanningResult(p,output([],[],'첫 답변: 궁중 공연을 계기로 갈등을 열어 보세요.'),{expectedSignature:planningSignature(p)});
+ recordAuthorMessage(p,'그 방향으로 첫 장면을 제안해 줘.');
+ const prompt=buildPlanningPrompt(p);
+ assert.match(prompt,/이전 AI 제안[\s\S]*첫 답변: 궁중 공연/);
+ assert.match(prompt,/이번 작가 요청[\s\S]*그 방향으로 첫 장면을 제안해 줘/);
+});

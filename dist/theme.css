@@ -349,3 +349,7 @@ dialog code {color: var(--color-primary);}
 .project-title-row h1 {overflow-wrap:anywhere;}
 .connection-complete {cursor:default;user-select:text;}
 #connectDialog .dialog-actions [hidden] {display:none;}
+
+.writer-script-panel:has(#writerScriptBody[hidden]) {min-height:0;}
+.writer-script-panel:has(#writerScriptBody[hidden]) .panel-head {margin-bottom:0;}
+#planningReplyStatus:empty {display:none;}
