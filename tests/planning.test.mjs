@@ -24,11 +24,11 @@ test('review prompt contains approved, rejected, guard and author conversation b
  const prompt=buildPlanningPrompt(p);assert.ok(prompt.includes(decision.statement));assert.ok(prompt.includes('이번에는 3화에서'));assert.ok(prompt.includes(p.script));
  assert.ok(prompt.includes('기획 검토'));assert.throws(()=>buildPlanningPrompt(p,{maxLength:20}),/초과/);
 });
-test('strict parser rejects malformed review, invented kinds, excessive reports, and invalid candidate index',()=>{
+test('strict parser rejects malformed review, invented kinds, excessive reports and drops invalid candidate links',()=>{
  assert.throws(()=>parsePlanningResult('{broken'),/JSON/);
  assert.throws(()=>parsePlanningResult(JSON.stringify({reply:'ok',issues:[],candidates:new Array(11).fill(idea())})),/스키마/);
  assert.throws(()=>parsePlanningResult(output([{...suspicious(),kind:'hack'}])),/형식/);
- assert.throws(()=>parsePlanningResult(output([{...suspicious(),candidateIndex:4}])),/인덱스/);
+ assert.equal(parsePlanningResult(output([{...suspicious(),candidateIndex:4}])).issues[0].candidateIndex,null);
  assert.equal(parsePlanningResult('```json\n'+output()+'\n```').issues.length,0);
 });
 test('AI review reports a semantically duplicated approved decision; linked candidate is not admitted',async()=>{
@@ -98,4 +98,23 @@ test('planning prompt answers the latest saved question in context of the previo
  const prompt=buildPlanningPrompt(p);
  assert.match(prompt,/이전 AI 제안[\s\S]*첫 답변: 궁중 공연/);
  assert.match(prompt,/이번 작가 요청[\s\S]*그 방향으로 첫 장면을 제안해 줘/);
+});
+test('a dangling duplicate reference keeps the written reply and validated review',()=>{
+ const p=project();
+ const review=applyPlanningResult(p,output([suspicious('',0)]),{expectedSignature:planningSignature(p)});
+ assert.equal(review.issues[0].candidateIndex,null);
+ assert.match(p.planning.messages.at(-1).content,/기존 정설/);
+});
+test('deleting a reply invalidates the review and excludes it from lightweight conversation',async()=>{
+ const {removePlanningMessage,buildPlanningConversationPrompt}=await import('../web/planning.mjs');
+ const p=project();
+ const d=await approved(p);
+ recordAuthorMessage(p,'지금 이야기의 장점이 뭐야?');
+ const r=applyPlanningResult(p,output([],[],'삭제할 AI 답변'),{expectedSignature:planningSignature(p)});
+ removePlanningMessage(p,p.planning.messages.at(-1).id);
+ const prompt=buildPlanningConversationPrompt(p);
+ assert.match(prompt,/지금 이야기의 장점이 뭐야/);
+ assert.doesNotMatch(prompt,/삭제할 AI 답변|candidateIndex/);
+ assert.equal(reviewIsCurrent(p,r),false);
+ assert.equal(d.status,'approved');
 });

@@ -1,6 +1,6 @@
 import {newProject,safeShots,previewShotsFromScript,invalidateApprovals,approveShot,exportApprovedSeedancePrompt,editShot,compileSeedancePrompt,extractShotsFromAI,validateImportedProject} from './core.mjs';
-import {ensurePlanning,recordAuthorMessage,planningSignature,buildPlanningPrompt,applyPlanningResult,reviewIsCurrent,reviewIssue} from './planning.mjs';
-import {listProjects,saveProject} from './storage.mjs';
+import {ensurePlanning,recordAuthorMessage,planningSignature,buildPlanningPrompt,applyPlanningResult,buildPlanningConversationPrompt,applyPlanningConversationReply,removePlanningMessage,reviewIsCurrent,reviewIssue} from './planning.mjs';
+import {listProjects,saveProject,deleteProject} from './storage.mjs';
 import {inspectLocalDraft} from './local-review.mjs';
 import {ensureNarrative,prioritizeContinuity,narrativePromptContext} from './narrative.mjs';
 import {initNarrativeUI} from './narrative-ui.mjs';
@@ -13,8 +13,17 @@ import {ensureCanon,createCanonCandidate,decideCanonCandidate,reopenDeferredDeci
 const $=id=>document.getElementById(id),bridge=new BridgeClient();
 let projects=[],project=null,selected=null,saveTimer=null,busy=false,backupHandle=null,selectedBranch=null,selectedEpisodeNumber=null,writerScope='global',riskTimer=null,narrativeUI=null;
 function notice(message){const t=$('toast');t.textContent=message;t.classList.add('show');clearTimeout(notice.timer);notice.timer=setTimeout(()=>t.classList.remove('show'),4200);}
-function setBusy(next){busy=next;for(const id of ['generateBtn','previewBtn','imageGenBtn','addShotBtn','approveBtn','extractDecisionBtn','candidateBtn','reviewPlanningBtn','recordPlanningBtn'])$(id).disabled=next;}
-async function persist(p=project){if(!p)return;await saveProject(p);$('saveState').textContent='● 브라우저에 저장됨';}
+function setBusy(next){busy=next;for(const id of ['generateBtn','previewBtn','imageGenBtn','addShotBtn','approveBtn','extractDecisionBtn','candidateBtn','reviewPlanningBtn','reviewCanonPlanningBtn','recordPlanningBtn','deleteProjectBtn'])$(id).disabled=next;}
+const deletingProjects=new Set(),pendingSaves=new Map();
+async function persist(p=project){
+ if(!p||deletingProjects.has(p.id))return;
+ const previous=pendingSaves.get(p.id)||Promise.resolve();
+ const snapshot=structuredClone(p);
+ const save=previous.catch(()=>{}).then(()=>saveProject(snapshot));
+ pendingSaves.set(p.id,save);
+ try{await save;$('saveState').textContent='● 브라우저에 저장됨';}
+ finally{if(pendingSaves.get(p.id)===save)pendingSaves.delete(p.id);}
+}
 function scheduleSave(){clearTimeout(saveTimer);$('saveState').textContent='저장 중…';const current=project;saveTimer=setTimeout(()=>{void persist(current).catch(e=>notice('저장 실패: '+e.message));},500);}
 async function flush(){clearTimeout(saveTimer);await persist();}
 function activeShot(){return project?.shots.find(s=>s.id===selected)||null;}
@@ -22,7 +31,13 @@ function activeEpisode(){return project?.series?.episodes.find(e=>e.number===sel
 function renderShotTarget(){const el=$('shotGenerationScope');if(el)el.textContent=writerScope==='global'?'샷 생성 대상: 작품 전체 대본 (기획·AI 대화에서 집필 범위를 변경할 수 있습니다.)':`샷 생성 대상: ${writerScope}화 대본 (선택 회차 샷만 교체하며 다른 회차는 보존)`;}
 function resetWriterScope(){writerScope='global';selectedEpisodeNumber=null;}
 function projectList(){const box=$('projectList');box.replaceChildren();for(const p of projects){const btn=document.createElement('button');btn.className='project-item'+(p.id===project?.id?' active':'');btn.textContent=p.title||'제목 없음';const sub=document.createElement('span');sub.className='meta';sub.textContent=`${p.shots.length} shots · ${p.updatedAt?.slice(0,10)||''}`;btn.append(sub);btn.onclick=async()=>{if(p.id===project?.id)return;await flush();project=p;selected=p.shots[0]?.id||null;resetWriterScope();render();};box.append(btn);}}
-function render(){if(!project)return;ensureCanon(project);ensureGuards(project);ensurePlanning(project);ensureSeries(project);ensureNarrative(project);projectList();$('projectHeading').textContent=project.title;$('titleInput').value=project.title;$('scriptInput').value=project.script;$('bibleInput').value=project.visualBible;$('scriptLength').textContent=`${project.script.length.toLocaleString()}자`;$('revisionCount').textContent=`Revision ${project.revision}`;renderReference();renderShots();renderDetail();renderCanon();renderSeries();renderWriter();renderShotTarget();renderEntry();}
+function render(){
+ $('projectWorkspace').hidden=!project;
+ $('emptyWorkspace').hidden=!!project;
+ $('deleteProjectBtn').hidden=!project;
+ $('backupBtn').disabled=$('folderBtn').disabled=!project;
+ if(!project){projectList();$('saveState').textContent='저장된 작품 없음';return;}
+ ensureCanon(project);ensureGuards(project);ensurePlanning(project);ensureSeries(project);ensureNarrative(project);projectList();$('projectHeading').textContent=project.title;$('titleInput').value=project.title;$('scriptInput').value=project.script;$('bibleInput').value=project.visualBible;$('scriptLength').textContent=`${project.script.length.toLocaleString()}자`;$('revisionCount').textContent=`Revision ${project.revision}`;renderReference();renderShots();renderDetail();renderCanon();renderSeries();renderWriter();renderShotTarget();renderEntry();}
 function renderReference(){const area=$('referencePreview');area.replaceChildren();if(project.characterReference?.dataUrl){const img=document.createElement('img');img.src=project.characterReference.dataUrl;img.alt='캐릭터 참조 이미지';area.append(img);}}
 function renderShots(){const list=$('shotList');list.replaceChildren();$('shotCount').textContent=project.shots.length;const approved=project.shots.filter(s=>s.status==='approved').length;$('approvalSummary').textContent=`승인 ${approved}개 / 검토 필요 ${project.shots.filter(s=>s.status==='needs_review').length}개`;$('revisionCount').textContent=`Revision ${project.revision}`;
  if(!project.shots.length){const p=document.createElement('p');p.className='empty';p.textContent='대본을 분석하거나 샷을 수동으로 추가하세요.';list.append(p);return;}
@@ -82,7 +97,7 @@ function renderGuardSettings(){
  if(!project.guards.rules.length)list.append(uiEl('p','empty','등록된 검증 기준이 없습니다.'));
 }
 function asDataUrl(file,max=5_000_000){return new Promise((resolve,reject)=>{if(!file||!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>max)return reject(new Error('PNG/JPEG/WebP 파일 5MB 이하만 지원합니다.'));const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(file);});}
-async function downloadBackup(){await flush();try{const bytes=projectToZip(project);const blob=new Blob([bytes],{type:'application/zip'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`DramaForge-${project.title.replace(/[^\w가-힣-]/g,'_')}-${new Date().toISOString().slice(0,10)}.zip`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);notice('작품 ZIP 다운로드가 시작되었습니다. 완성 영상 원본은 포함하지 않습니다.');}catch(e){notice('백업 실패: '+e.message);}}
+async function downloadBackup(){const current=project;if(!current)return;try{await flush();const bytes=projectToZip(current);const blob=new Blob([bytes],{type:'application/zip'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`DramaForge-${current.title.replace(/[^\w가-힣-]/g,'_')}-${new Date().toISOString().slice(0,10)}.zip`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);notice('작품 ZIP 다운로드가 시작되었습니다. 완성 영상 원본은 포함하지 않습니다.');}catch(e){notice('백업 실패: '+e.message);}}
 async function writeFolderBackup(silent=false){if(!backupHandle)return;if(typeof backupHandle.queryPermission==='function'){const status=await backupHandle.queryPermission({mode:'readwrite'});if(status!=='granted'){if(!silent)notice('폴더 쓰기 권한이 필요합니다.');return;}}const name=`DramaForge-${project.id}-${Date.now()}.zip`;const file=await backupHandle.getFileHandle(name,{create:true});const stream=await file.createWritable();await stream.write(projectToZip(project));await stream.close();if(!silent)notice(`백업 저장: ${name}`);}
 
 // --- Author-controlled canon governance UI. The UI role is local single-author only. ---
@@ -139,7 +154,27 @@ function renderWriter(){
  for(const msg of project.planning.messages.slice(-55)){
   const el=uiEl('article',`planning-message ${msg.role==='assistant'?'assistant':''}`);
   el.append(uiEl('span','who',msg.role==='author'?'작가':'Codex · 기획 답변'));
-  el.append(uiEl('div','',msg.content));messages.append(el);
+  const remove=uiButton('삭제',async()=>{
+   if(busy||!confirm('이 대화 메시지를 삭제할까요?'))return;
+   const current=project;
+   const changed=structuredClone(current);
+   removePlanningMessage(changed,msg.id);
+   clearTimeout(saveTimer);
+   setBusy(true);
+   try{
+    await persist(changed);
+    current.planning=changed.planning;
+    current.updatedAt=changed.updatedAt;
+    current.revision=changed.revision;
+    if(project===current){renderWriter();projectList();}
+   }catch(error){
+    if(project===current)scheduleSave();
+    throw error;
+   }finally{setBusy(false);}
+  });
+  remove.classList.add('planning-message-delete');
+  remove.setAttribute('aria-label',msg.role==='author'?'작가 메시지 삭제':'AI 답변 삭제');
+  el.append(remove,uiEl('div','',msg.content));messages.append(el);
  }
  messages.scrollTop=messages.scrollHeight;
  const canon=$('writerCanonList');canon.replaceChildren();
@@ -208,12 +243,12 @@ async function recordPlanning(){
  try{recordAuthorMessage(project,$('planningInput').value);$('planningInput').value='';await flush();renderWriter();}
  catch(e){notice(e.message);}
 }
-async function aiPlanningReview(){
+async function requestPlanningReply({review=false}={}){
  if(!project||busy)return;
  const current=project;
  const episodeNumber=writerScope==='global'?null:Number(writerScope);
  const input=$('planningInput').value.trim();
- if(!input&&!current.planning.messages.some(message=>message.role==='author')){
+ if(!review&&!input&&!current.planning.messages.some(message=>message.role==='author')){
   setPlanningFeedback(current,'아이디어나 질문을 먼저 입력하세요.');
   $('planningInput').focus();
   return;
@@ -231,28 +266,27 @@ async function aiPlanningReview(){
    if(project===current)void $('connectBtn').onclick();
    return;
   }
-  setPlanningFeedback(current,'PC 연결과 ChatGPT 로그인 상태 확인 중…');
-  const status=await bridge.status();
-  if(!status.account){
-   setPlanningFeedback(current,'질문을 저장했습니다. ChatGPT에 로그인한 뒤 AI 답변 받기를 다시 누르세요.');
-   if(project===current)void $('connectBtn').onclick();
-   return;
-  }
+
   const signature=planningSignature(current);
-  const prompt=buildPlanningPrompt(current,{episodeNumber});
-  setPlanningFeedback(current,'Codex가 답변을 작성 중입니다…');
-  const result=await bridge.job('review',prompt);
-  const review=applyPlanningResult(current,result.text,{expectedSignature:signature});
+  const prompt=review?buildPlanningPrompt(current,{episodeNumber}):buildPlanningConversationPrompt(current);
+  setPlanningFeedback(current,review?'Codex가 정설과 충돌을 검토 중입니다…':'Codex가 답변을 작성 중입니다…');
+  const result=await bridge.job(review?'review':'planning',prompt);
+  if(signature!==planningSignature(current))throw Error('요청 중 작품이나 대화가 변경됐습니다.');
+  const assessment=review?applyPlanningResult(current,result.text,{expectedSignature:signature}):null;
+  if(!review)applyPlanningConversationReply(current,result.text);
   await persist(current);
-  setPlanningFeedback(current,`답변 완료 · 검토 사항 ${review.issues.length}건 · 정설 후보 ${review.importedCandidateIds.length}건`);
+  setPlanningFeedback(current,assessment?`검토 완료 · 검토 사항 ${assessment.issues.length}건 · 정설 후보 ${assessment.importedCandidateIds.length}건`:'답변 완료');
   if(project===current){renderWriter();renderCanon();}
  }catch(e){
-  setPlanningFeedback(current,'AI 답변 실패. '+connectionErrorMessage(e)+' 해결한 뒤 AI 답변 받기를 다시 누르세요.');
+  const action=review?'정설·충돌 검토':'AI 답변 받기';
+  setPlanningFeedback(current,'AI 요청 실패. '+connectionErrorMessage(e)+' 해결한 뒤 '+action+'를 다시 누르세요.');
+  if(project===current&&/로그인|연결 승인이 필요|인증/.test(e.message)&&!$('connectDialog').open)void $('connectBtn').onclick();
   if(project===current)renderWriter();
  }finally{setBusy(false);}
 }
 $('recordPlanningBtn').onclick=recordPlanning;
-$('reviewPlanningBtn').onclick=aiPlanningReview;
+$('reviewPlanningBtn').onclick=()=>requestPlanningReply();
+$('reviewCanonPlanningBtn').onclick=()=>requestPlanningReply({review:true});
 function infoItem(title,text,additional=''){const card=uiEl('article','decision-item'),heading=uiEl('strong','',title),desc=uiEl('p','',text);card.append(heading,desc);if(additional)card.append(uiEl('p','muted',additional));return card;}
 function renderCanon(){if(!project)return;ensureCanon(project);
  const approved=project.canon.decisions.filter(x=>x.status==='approved').length,rejected=project.canon.decisions.filter(x=>x.status==='rejected').length,candidates=project.canon.decisions.filter(x=>x.status==='candidate').length;
@@ -495,6 +529,42 @@ $('planningFiles').onchange=async e=>{
   notice(`참고 문서 ${files.length}개 추가 완료. 승인 정설은 변경되지 않았습니다.`);
  }catch(err){$('materialStatus').textContent='가져오기 실패: '+err.message;}finally{e.target.value='';}
 };
+const projectLibraryInitialized='dramaforge-project-library-initialized';
+$('emptyNewProjectBtn').onclick=()=>$('newProjectBtn').click();
+$('deleteProjectBtn').onclick=()=>{
+ if(!project||busy)return;
+ $('deleteProjectName').textContent=project.title||'제목 없음';
+ $('deleteProjectDialog').showModal();
+};
+$('cancelProjectDeleteBtn').onclick=()=>$('deleteProjectDialog').close();
+$('backupBeforeDeleteBtn').onclick=downloadBackup;
+$('deleteProjectDialog').oncancel=e=>{if($('confirmProjectDeleteBtn').disabled)e.preventDefault();};
+$('confirmProjectDeleteBtn').onclick=async()=>{
+ const current=project;
+ if(!current||busy)return;
+ const controls=['confirmProjectDeleteBtn','backupBeforeDeleteBtn','cancelProjectDeleteBtn'];
+ for(const id of controls)$(id).disabled=true;
+ clearTimeout(saveTimer);
+ deletingProjects.add(current.id);
+ try{
+  localStorage.setItem(projectLibraryInitialized,'1');
+  await pendingSaves.get(current.id)?.catch(()=>{});
+  await deleteProject(current.id);
+  projects=projects.filter(item=>item!==current);
+  project=projects[0]||null;
+  $('planningInput').value='';
+  selected=project?.shots[0]?.id||null;
+  resetWriterScope();
+  $('deleteProjectDialog').close();
+  render();
+  if(project)showWorkspace('writer');
+  notice('작품을 삭제했습니다.');
+ }catch(error){
+  deletingProjects.delete(current.id);
+  scheduleSave();
+  notice('작품 삭제 실패: '+error.message);
+ }finally{for(const id of controls)$(id).disabled=false;}
+};
 $('newProjectBtn').onclick=async()=>{await flush();const p=newProject(`새 작품 ${projects.length+1}`);p.onboarding={status:'pending'};projects.unshift(p);project=p;selected=null;resetWriterScope();await persist();render();showWorkspace('writer');showEntry();};
 $('addShotBtn').onclick=async()=>{const shot=safeShots([{scene:`SC${String(project.shots.length+1).padStart(2,'0')}`,title:`샷 ${project.shots.length+1}`,action:'장면의 행동을 입력하세요.',camera:'Medium shot',duration:8}])[0];shot.prompt=compileSeedancePrompt(shot,project.visualBible);project.shots.push(shot);selected=shot.id;project.revision++;await flush();render();};
 $('previewBtn').onclick=async()=>{try{
@@ -657,4 +727,4 @@ $('loginBtn').onclick=async()=>{
  }catch(e){tab?.close();setDisconnected(connectionErrorMessage(e));}
 };
 narrativeUI=initNarrativeUI({getProject:()=>project,getEpisode:()=>selectedEpisodeNumber,persist:flush,afterChange:()=>{renderSeries();renderShots();renderDetail();renderLiveContinuity();},notice});
-try{projects=await listProjects();if(!projects.length){const p=newProject('첫 번째 드라마');p.onboarding={status:'pending'};projects=[p];await persist(p);}project=projects[0];selected=project.shots[0]?.id||null;resetWriterScope();render();$('saveState').textContent='● 브라우저에 저장됨';if(needsOnboarding(project))showEntry();void autoConnect({silent:true});}catch(e){notice('IndexedDB 초기화 실패: '+e.message);$('saveState').textContent='저장 기능 오류';}
+try{projects=await listProjects();if(!projects.length&&!localStorage.getItem(projectLibraryInitialized)){const p=newProject('첫 번째 드라마');p.onboarding={status:'pending'};projects=[p];await persist(p);}project=projects[0]||null;selected=project?.shots[0]?.id||null;resetWriterScope();render();if(project)$('saveState').textContent='● 브라우저에 저장됨';if(needsOnboarding(project))showEntry();void autoConnect({silent:true});}catch(e){notice('IndexedDB 초기화 실패: '+e.message);$('saveState').textContent='저장 기능 오류';}

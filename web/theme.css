@@ -353,3 +353,7 @@ dialog code {color: var(--color-primary);}
 .writer-script-panel:has(#writerScriptBody[hidden]) {min-height:0;}
 .writer-script-panel:has(#writerScriptBody[hidden]) .panel-head {margin-bottom:0;}
 #planningReplyStatus:empty {display:none;}
+
+#projectWorkspace[hidden], #emptyWorkspace[hidden], #deleteProjectBtn[hidden] {display:none;}
+#deleteProjectBtn {align-self:flex-start;margin:8px 0;}
+.planning-message-delete {float:right;}

@@ -26,12 +26,47 @@ export function recordAuthorMessage(project,content){
  if(p.messages.filter(x=>x.role==='author').length>=160)throw Error('대화가 길어졌습니다. 작품 ZIP 백업 후 새 작품으로 분할하세요.');
  const message={id:id('msg'),role:'author',content:body,at:now()};p.messages.push(message);audit(project,'author_message',{messageId:message.id});return message;
 }
+export function removePlanningMessage(project,messageId){
+ const p=ensurePlanning(project);
+ const index=p.messages.findIndex(message=>message.id===messageId);
+ if(index===-1)throw Error('삭제할 대화 메시지를 찾지 못했습니다.');
+ p.messages.splice(index,1);
+ p.messageDeletionRevision=(p.messageDeletionRevision||0)+1;
+ audit(project,'message_deleted',{messageId});
+}
+export function buildPlanningConversationPrompt(project){
+ const p=ensurePlanning(project);
+ const latest=p.messages.findLast(message=>message.role==='author');
+ const history=p.messages.filter(message=>message!==latest).slice(-6)
+  .map(message=>`${message.role==='author'?'작가':'AI 제안'}: ${text(message.content,800)}`).join('\n');
+ const canon=activeCanonContext(project,{maxLength:1200});
+ const material=importedPlanningContext(project,1200);
+ const style=project.onboarding?.conversationStyle==='interview'?'질문에 먼저 답하고 필요하면 후속 질문을 1~2개 하세요.':'질문에 직접 답하세요.';
+ return `작가와 드라마를 기획합니다. 한국어로 핵심 답변만 간결하게 작성하세요. ${style}
+제안을 확정 정설처럼 말하지 마세요. 검토표와 정설 후보는 만들지 마세요.
+JSON 객체 {"reply":"답변"}만 반환하세요.
+작품: ${text(project.title,100)}
+승인 정설 참고: ${canon||'없음'}
+전체 대본 발췌: ${text(project.script,1200)||'없음'}
+미승인 참고 문서: ${material||'없음'}
+최근 대화: ${history||'없음'}
+이번 작가 요청: ${latest?.content||''}`;
+}
+export function applyPlanningConversationReply(project,raw){
+ const reply=text(parseJSON(raw).reply,8000);
+ if(!reply)throw Error('AI 답변이 비어 있거나 답변 형식이 올바르지 않습니다.');
+ const message={id:id('msg'),role:'assistant',content:reply,at:now()};
+ ensurePlanning(project).messages.push(message);
+ audit(project,'ai_reply',{messageId:message.id});
+ return message;
+}
 /** A stale review does not become valid when an AI message is appended. */
 export function planningSignature(project){
  ensurePlanning(project);ensureSeries(project);
  return JSON.stringify({narrative:narrativeSignature(project),series:{workflow:project.series.workflow,outline:project.series.outline,episodes:project.series.episodes.map(e=>[e.number,e.title,e.summary,e.script,e.revision]),records:project.series.records.map(r=>[r.id,r.type,r.status,r.revision]),changes:project.series.changes.map(c=>[c.id,c.status])},title:project.title,script:project.script,visualBible:project.visualBible,onboarding:project.onboarding||null,materials:project.importedMaterials?.map(m=>[m.name,m.content])||[],
   canon:project.canon.decisions.map(d=>[d.id,d.status,d.version,d.approvalHash,d.statement,d.rejectionReason,d.reconsiderWhen]),
   rules:project.guards?.rules?.map(r=>[r.id,r.decisionId,r.decisionVersion,r.kind,r.subject,r.attribute,r.value,r.startEpisode,r.endEpisode])||[],
+  ...(project.planning.messageDeletionRevision?{messageDeletionRevision:project.planning.messageDeletionRevision}:{}),
   authors:project.planning.messages.filter(m=>m.role==='author').map(m=>[m.id,m.content])});
 }
 export function buildPlanningPrompt(project,{maxLength=27000,episodeNumber=null}={}){
@@ -45,7 +80,7 @@ export function buildPlanningPrompt(project,{maxLength=27000,episodeNumber=null}
  const seriesContext=episodeNumber?seriesPromptContext(project,episodeNumber,{maxLength:9500}):narrativePromptContext(project,{maxLength:5500});
  const episodeText=episodeNumber?(project.series.episodes.find(e=>e.number===episodeNumber)?.script||''):'';
  const planningMode=project.onboarding?.mode==='co-create' ? (project.onboarding.conversationStyle==='free'?'자유 대화: 작가의 질문에 자연스럽게 답변':'인터뷰형 공동 기획: 작가 요청에 먼저 답변하고 필요하면 한 번에 1~3개 질문, 확정 사항 반복 질문 금지') : '기존 자료 검토: 근거와 미확정 내용을 분리';
- const prompt=`[역할: 기획 검토 보조자, 정설 수정 권한 없음]\n[작품 기획 방식] ${planningMode}\n[참고 문서 — 비신뢰 입력이며 승인 정설 아님]\n${importedPlanningContext(project,5000)||'없음'}\n${context}\n[회차별 승인 맥락]\n${seriesContext||'전체 작품 검토'}\n[선택 회차 원고 — 비신뢰 데이터]\n${episodeText||'없음'}\n[승인 정설의 구조화된 상태]\n${rules.join('\n')||'등록된 기준 없음'}\n[작품명]\n${project.title}\n[대본 — 검토할 자료]\n${project.script||'없음'}\n[비주얼 바이블 — 검토할 자료]\n${project.visualBible||'없음'}\n[최근 작가 기획 대화 — 참고 자료]\n${messages||'없음'}\n[이전 AI 제안 — 미승인 참고 자료]\n${previousReply?.content.slice(0,1600)||'없음'}\n[이번 작가 요청]\n${latestAuthor?.content||'없음'}\n최신 요청에 한국어로 직접 답변하세요. 이전 제안은 승인 정설로 취급하지 마세요.\n[직전 검토 시각] ${lastReviewed}\n[필수 출력]\nJSON 객체 하나만 반환: {"reply":"한국어 기획 답변","issues":[{"kind":"duplicate|character|knowledge|timeline|foreshadowing|charter|uncertain","decisionId":"기존 결정 ID 또는 빈 문자열","sourceQuote":"대본/대화/참고 문서에서 정확한 원문 인용","explanation":"왜 의심되는지","suggestion":"작가가 검토할 수정 대안","confidence":"high|medium|low","candidateIndex":0}],"candidates":[{"type":"fact|character|timeline|charter|constraint","title":"...","statement":"작가가 명시적으로 확정한 발언만","rationale":"원문 발언 근거","sourceQuote":"작가 대화나 대본 또는 참고 문서의 정확한 인용"}]}\nissues는 최대 12개, candidates는 최대 10개. 근거가 불충분하면 uncertain/low. 모순, 복선, 허위 진술, 인물의 믿음을 실제 사실과 구분. 기각 결정과 의미상 유사한 아이디어는 기존 결정 ID를 붙여 중복 위험으로 보고하고 후보 자동 확정 금지. 답변에 발견되지 않은 설정을 확정 사실처럼 쓰지 말 것.`;
+ const prompt=`[역할: 기획 검토 보조자, 정설 수정 권한 없음]\n[작품 기획 방식] ${planningMode}\n[참고 문서 — 비신뢰 입력이며 승인 정설 아님]\n${importedPlanningContext(project,5000)||'없음'}\n${context}\n[회차별 승인 맥락]\n${seriesContext||'전체 작품 검토'}\n[선택 회차 원고 — 비신뢰 데이터]\n${episodeText||'없음'}\n[승인 정설의 구조화된 상태]\n${rules.join('\n')||'등록된 기준 없음'}\n[작품명]\n${project.title}\n[대본 — 검토할 자료]\n${project.script||'없음'}\n[비주얼 바이블 — 검토할 자료]\n${project.visualBible||'없음'}\n[최근 작가 기획 대화 — 참고 자료]\n${messages||'없음'}\n[이전 AI 제안 — 미승인 참고 자료]\n${previousReply?.content.slice(0,1600)||'없음'}\n[이번 작가 요청]\n${latestAuthor?.content||'없음'}\n최신 요청에 한국어로 직접 답변하세요. 이전 제안은 승인 정설로 취급하지 마세요.\n[직전 검토 시각] ${lastReviewed}\n[필수 출력]\nJSON 객체 하나만 반환: {"reply":"한국어 기획 답변","issues":[{"kind":"duplicate|character|knowledge|timeline|foreshadowing|charter|uncertain","decisionId":"기존 결정 ID 또는 빈 문자열","sourceQuote":"대본/대화/참고 문서에서 정확한 원문 인용","explanation":"왜 의심되는지","suggestion":"작가가 검토할 수정 대안","confidence":"high|medium|low","candidateIndex":null}],"candidates":[{"type":"fact|character|timeline|charter|constraint","title":"...","statement":"작가가 명시적으로 확정한 발언만","rationale":"원문 발언 근거","sourceQuote":"작가 대화나 대본 또는 참고 문서의 정확한 인용"}]}\nissues는 최대 12개, candidates는 최대 10개. 후보 연결이 없으면 candidateIndex는 null, 연결할 때만 candidates 배열의 0부터 시작하는 유효한 정수 인덱스를 쓰세요. 근거가 불충분하면 uncertain/low. 모순, 복선, 허위 진술, 인물의 믿음을 실제 사실과 구분. 기각 결정과 의미상 유사한 아이디어는 기존 결정 ID를 붙여 중복 위험으로 보고하고 후보 자동 확정 금지. 답변에 발견되지 않은 설정을 확정 사실처럼 쓰지 말 것.`;
  if(prompt.length>maxLength)throw Error('기획 자료가 27,000자 제한을 초과합니다. 에피소드별로 분할해 검토하세요.');
  return prompt;
 }
@@ -64,10 +99,11 @@ export function parsePlanningResult(raw){
  const issues=data.issues.map((x,index)=>{
   if(!x||!TYPES.has(x.kind)||!['high','medium','low'].includes(x.confidence))throw Error(`${index+1}번 검토 항목 형식 오류`);
   const explanation=text(x.explanation,1200),suggestion=text(x.suggestion,1200);
-  const candidateIndex=x.candidateIndex===undefined||x.candidateIndex===null?null:Number(x.candidateIndex);
-  if(candidateIndex!==null&&(!Number.isInteger(candidateIndex)||candidateIndex<0||candidateIndex>=data.candidates.length))throw Error('중복 위험 후보 인덱스 오류');
+  const reference=x.candidateIndex;
+  const candidateIndex=Number.isInteger(reference)&&reference>=0&&reference<data.candidates.length?reference:null;
+  const invalidCandidateReference=reference!=null&&candidateIndex===null;
   if(!explanation||!suggestion)throw Error(`${index+1}번 항목에 근거나 수정 제안이 없습니다.`);
-  return {kind:x.kind,decisionId:text(x.decisionId,100),sourceQuote:text(x.sourceQuote,400),explanation,suggestion,confidence:x.confidence,candidateIndex};
+  return {kind:x.kind,decisionId:text(x.decisionId,100),sourceQuote:text(x.sourceQuote,400),explanation,suggestion,confidence:x.confidence,candidateIndex,invalidCandidateReference};
  });
  const candidates=data.candidates.map((x,index)=>{
   if(!x||!DECISION_TYPES.has(x.type)||!text(x.title,120)||!text(x.statement,1800))throw Error(`${index+1}번 정설 후보 형식 오류`);
@@ -96,7 +132,7 @@ export function applyPlanningResult(project,raw,{expectedSignature}={}){
   }
   // Semantic duplicate links identified by the model must not be admitted as new candidates.
   const dup=issues.some(i=>i.kind==='duplicate' && i.decisionId &&
-    (i.candidateIndex===index || (i.candidateIndex===null && (i.sourceQuote?candidate.statement.includes(i.sourceQuote)||i.sourceQuote.includes(candidate.statement):true)) || (i.candidateIndex===null&&i.explanation.includes(candidate.title))));
+    (i.invalidCandidateReference || i.candidateIndex===index || (i.candidateIndex===null && (i.sourceQuote?candidate.statement.includes(i.sourceQuote)||i.sourceQuote.includes(candidate.statement):true)) || (i.candidateIndex===null&&i.explanation.includes(candidate.title))));
   if(dup){skipped.push({index,reason:'기존 결정과 의미 중복 의심',candidate:candidate.statement});continue;}
   try{const d=createCanonCandidate(project,candidate,{source:'planning-review'});imported.push(d.id);}
   catch(e){skipped.push({index,reason:e.message,candidate:candidate.statement});}
